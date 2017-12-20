@@ -196,8 +196,12 @@ class BaseWindowManager(App):
                 self.handle_event(self.display.next_event())
 
     def handle_event(self, event):
+        handler = self.event_mapping.get(event.type)
+        if not handler:
+            Logger.warning(f'WindowMgr: received event for which there is no handler ({event.type})')
+            return
         try:
-            self.dispatch(self.event_mapping[event.type], event)
+            self.dispatch(handler, event)
         except Xlib.error.BadWindow:
             # TODO: Handle BadWindow
             pass
