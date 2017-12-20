@@ -127,6 +127,7 @@ class BaseWindowManager(App):
             'UnmapNotify': 'on_unmap_notify',
             'MapNotify': 'on_map_notify',
             'UnmapNotify': 'on_unmap_notify',
+            'MappingNotify': 'on_mapping_notify',
             'MapRequest': 'on_map_request',
             'ReparentNotify': 'on_reparent_notify',
             'ConfigureNotify': 'on_configure_notify',
@@ -210,6 +211,9 @@ class BaseWindowManager(App):
         pass
 
     def on_map_notify(self, event):
+        pass
+
+    def on_mapping_notify(self, event):
         pass
 
     def on_map_request(self, event):
@@ -332,6 +336,9 @@ class KivyWindowManager(CompositingWindowManager):
 
         Logger.info(f'Map notify: {event}, name: {event.window.get_wm_name()}')
         super(KivyWindowManager, self).on_map_notify(event)
+
+    def on_mapping_notify(self, event):
+        Logger.info(f'Mapping notify: {event}')
 
     def on_map_request(self, event):
         Logger.info(f'Map request: {event}, name: {event.window.get_wm_name()}')
