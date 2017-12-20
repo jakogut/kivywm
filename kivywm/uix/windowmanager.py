@@ -96,7 +96,8 @@ class XWindow(Widget):
         # TODO: Get window geometry, and create a texture based on the actual
         # window size. There appears to be an issue with displaying NPOT
         # textures.
-        self.texture = Texture.create_from_pixmap(self.pixmap.id, (256, 256))
+        geom = self._window.get_geometry()
+        self.texture = Texture.create_from_pixmap(self.pixmap.id, (geom.width, geom.height))
 
     def unbind_texture(self):
         if self.pixmap:
