@@ -183,6 +183,7 @@ class BaseWindowManager(App):
 
         if ec.get_error():
             Logger.error('WindowMgr: Unable to create window manager, another one is running')
+            sys.exit(1)
 
     def poll_events(self):
         readable, w, e = select.select([self.display], [], [], 0)
