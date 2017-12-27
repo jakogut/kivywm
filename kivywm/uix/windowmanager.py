@@ -63,6 +63,13 @@ class XWindow(Widget):
     def name(self):
         return self._window.get_wm_name()
 
+    def on_size(self, *args):
+        Logger.info(f'Resized window: {self.name}, size: {self.size}')
+        self._window.configure(
+            width=round(self.width),
+            height=round(self.height),
+        )
+
     def on_window_map(self):
         self.invalidate_pixmap()
 
@@ -375,7 +382,7 @@ class KivyWindowManager(CompositingWindowManager):
         Logger.info(f'Reparent request: {event}, name: {event.window.get_wm_name()}')
         super(KivyWindowManager, self).on_reparent_request(event)
 
-    def on_configure_notify(self):
+    def on_configure_notify(self, event):
         if event.window.id in self.windows:
             # TODO: Check if the window was actually resized
             self.windows[event.window.id].dispatch('on_window_resize')
