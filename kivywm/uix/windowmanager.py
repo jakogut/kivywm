@@ -8,15 +8,12 @@ positioned according to kivy layouts.
 
 '''
 
-from kivy.app import App
 from kivy.graphics import Color, Rectangle
 from kivy.logger import Logger
 from kivy.event import EventDispatcher
 from kivy.properties import DictProperty, ObjectProperty
 from kivy.uix.widget import Widget
-from kivywm.graphics.texture import Texture
 from kivy.clock import Clock
-from kivy.core.window import Window as KivyWindow
 
 import select
 import sys
@@ -31,10 +28,6 @@ except ModuleNotFoundError:
     Logger.warning('WindowMgr: Unable to import Xlib, please install it with "pip install python-xlib"')
 
 SUPPORTED_WINDOW_PROVIDERS = ['WindowX11', 'WindowSDL']
-
-if KivyWindow.__class__.__name__ not in SUPPORTED_WINDOW_PROVIDERS:
-    Logger.error(f'WindowMgr: Unsupported window provider: {KivyWindow.__class__.__name__}')
-    sys.exit(1)
 
 class XWindow(Widget):
     texture = ObjectProperty(None, allownone=True)
@@ -96,6 +89,8 @@ class XWindow(Widget):
         # TODO: Get window geometry, and create a texture based on the actual
         # window size. There appears to be an issue with displaying NPOT
         # textures.
+        from kivywm.graphics.texture import Texture
+
         geom = self._window.get_geometry()
         self.texture = Texture.create_from_pixmap(self.pixmap.id, (geom.width, geom.height))
 
@@ -121,7 +116,7 @@ class XWindow(Widget):
         else:
             self._window.unmap()
 
-class BaseWindowManager(App):
+class BaseWindowManager(EventDispatcher):
     event_mapping = {
             'CreateNotify': 'on_create_notify',
             'DestroyNotify': 'on_destroy_notify',
@@ -135,8 +130,13 @@ class BaseWindowManager(App):
             'ConfigureRequest': 'on_configure_request',
         }
 
-    def __init__(self, **kwargs):
-        super(BaseWindowManager, self).__init__()
+    display = None
+    is_active = None
+
+    root_window = ObjectProperty(None)
+
+    def __init__(self, *args, **kwargs):
+        super(BaseWindowManager, self).__init__(*args, **kwargs)
 
         # Convert event strings to X protocol values
         self.event_mapping = {
@@ -148,10 +148,7 @@ class BaseWindowManager(App):
             for event in self.event_mapping.values()]
 
         self.connect()
-
-        self.bind(on_start=self.setup_wm)
-
-        Clock.schedule_interval(lambda dt: self.poll_events(), 0)
+        self._set_root_window()
 
     def connect(self):
         try:
@@ -160,9 +157,24 @@ class BaseWindowManager(App):
             Logger.error('WindowMgr: Unable to connect to X server')
             raise
 
+    def _set_root_window(self):
+        from kivy.app import App
+        app = App.get_running_app()
+
+        window = app.root_window
+
+        if window.__class__.__name__ not in SUPPORTED_WINDOW_PROVIDERS:
+            Logger.error(f'WindowMgr: Unsupported window provider: {window.__class__.__name__}')
+            return
+
+        self.root_window = window
+
+    def on_root_window(self, instance, window):
+        self.setup_wm()
+        Clock.schedule_interval(lambda dt: self.poll_events(), 0)
+
     def is_kivy_win(self, window):
-        from kivy.core.window import Window
-        window_info = Window.get_window_info()
+        window_info = self.root_window.get_window_info()
 
         if sys.platform == 'linux':
             from kivy.core.window.window_info import WindowInfoX11
@@ -181,11 +193,14 @@ class BaseWindowManager(App):
         self.root_win.change_attributes(event_mask=event_mask, onerror=ec)
         self.display.sync()
 
-        if ec.get_error():
-            Logger.error('WindowMgr: Unable to create window manager, another one is running')
-            sys.exit(1)
+        self.is_active = not ec.get_error()
+        if not self.is_active:
+            Logger.warning('WindowMgr: Unable to create window manager, another one is running')
 
     def poll_events(self):
+        if self.is_active is not None and not self.is_active:
+            return False
+
         readable, w, e = select.select([self.display], [], [], 0)
 
         if not readable:
@@ -233,6 +248,7 @@ class BaseWindowManager(App):
     def on_configure_request(self, event):
         pass
 
+
 class CompositingWindowManager(BaseWindowManager):
     required_extensions = ['Composite']
 
@@ -247,11 +263,14 @@ class CompositingWindowManager(BaseWindowManager):
         self.check_extensions(self.required_extensions)
 
         super(CompositingWindowManager, self).setup_wm()
+
+        if not self.is_active:
+            return
+
         self.root_win.composite_redirect_subwindows(RedirectAutomatic)
         self.overlay_window = self.root_win.composite_get_overlay_window().overlay_window
         self.display.sync()
 
-        app = App.get_running_app()
         for window in self.root_win.query_tree().children:
             if self.is_kivy_win(window):
                 Logger.info('WindowMgr: Found kivy window')
@@ -311,8 +330,6 @@ class KivyWindowManager(CompositingWindowManager):
         return self.windows.get(xid)
 
     def on_create_notify(self, event):
-        app = App.get_running_app()
-
         # Don't create a child for the Kivy window
         if self.is_kivy_win(event.window):
             return
