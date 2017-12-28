@@ -29,17 +29,17 @@ cdef extern from "graphics.h":
     ctypedef XID GLXPixmap
     ctypedef XID GLXDrawable
 
-    cdef int XFreePixmap(Display *, Pixmap)
-    cdef int XFree(void *)
-    cdef int glXDestroyPixmap(Display *, GLXPixmap)
+    cdef int XFreePixmap(Display *, Pixmap) nogil
+    cdef int XFree(void *) nogil
+    cdef int glXDestroyPixmap(Display *, GLXPixmap) nogil
 
 # GLX
 ctypedef void (*PFNGLXBINDTEXIMAGEEXTPROC)(Display *, GLXDrawable, const int, int *) nogil
 ctypedef void (*PFNGLXRELEASETEXIMAGEEXTPROC)(Display *, GLXDrawable, const int) nogil
 
 ctypedef struct GLX_Context:
-    void (*glXBindTexImageEXT)(Display *, GLXDrawable, const int, int *)
-    void (*glXReleaseTexImageEXT)(Display *, GLXDrawable, const int)
+    void (*glXBindTexImageEXT)(Display *, GLXDrawable, const int, int *) nogil
+    void (*glXReleaseTexImageEXT)(Display *, GLXDrawable, const int) nogil
 
 cdef GLX_Context *glx
 cdef GLX_Context *glx_get_context()
