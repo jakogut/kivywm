@@ -57,17 +57,17 @@ cdef extern from "X11/Xlib.h":
         unsigned char request_code
         unsigned char minor_code
 
-    cdef void XFree(void *data)
+    cdef void XFree(void *data) nogil
 
     ctypedef int (*XErrorHandler)(Display *d, XErrorEvent *e)
     cdef XErrorHandler XSetErrorHandler(XErrorHandler)
     cdef void XGetErrorText(Display *, unsigned char, char *, int)
 
 cdef extern from "GL/glx.h":
-    GLXPixmap glXCreatePixmap(Display *, GLXFBConfig, Pixmap, const int *);
-    GLXFBConfig *glXChooseFBConfig(Display *, int , const int *, int *);
-    XVisualInfo *glXChooseVisual( Display *, int , int *);
-    GLXContext glXCreateContext( Display *, XVisualInfo *, GLXContext, Bool);
+    GLXPixmap glXCreatePixmap(Display *, GLXFBConfig, Pixmap, const int *) nogil;
+    GLXFBConfig *glXChooseFBConfig(Display *, int , const int *, int *) nogil;
+    XVisualInfo *glXChooseVisual( Display *, int , int *) nogil;
+    GLXContext glXCreateContext( Display *, XVisualInfo *, GLXContext, Bool) nogil;
 
 cdef int error_handler(Display *d, XErrorEvent *e):
     print(f'ERROR: error_code: {e.error_code}, request_code: {e.request_code}, minor_code: {e.minor_code}')
@@ -78,19 +78,21 @@ cdef int error_handler(Display *d, XErrorEvent *e):
 
 XSetErrorHandler(error_handler)
 
-cdef GLXPixmap bindTexImage(Pixmap pixmap):
-    cdef int *pixmap_attribs = [
-        GLX_TEXTURE_TARGET_EXT, GLX_TEXTURE_2D_EXT,
-        GLX_TEXTURE_FORMAT_EXT, GLX_TEXTURE_FORMAT_RGBA_EXT,
-        0x8000
-    ]
+cdef int *pixmap_attribs = [
+    GLX_TEXTURE_TARGET_EXT, GLX_TEXTURE_2D_EXT,
+    GLX_TEXTURE_FORMAT_EXT, GLX_TEXTURE_FORMAT_RGBA_EXT,
+    0x8000
+]
 
+cdef GLXPixmap bindTexImage(Pixmap pixmap) nogil:
     cdef GLXPixmap glxpixmap
-    glxpixmap = glXCreatePixmap(window_info.display, configs[0], pixmap, pixmap_attribs)
 
-    glx.glXBindTexImageEXT(window_info.display, glxpixmap, GLX_FRONT_EXT, NULL)
-    return glxpixmap
+    with nogil:
+        glxpixmap = glXCreatePixmap(window_info.display, configs[0], pixmap, pixmap_attribs)
+        glx.glXBindTexImageEXT(window_info.display, glxpixmap, GLX_FRONT_EXT, NULL)
+        return glxpixmap
 
-cdef void releaseTexImage(GLXPixmap glxpixmap):
-    glx.glXReleaseTexImageEXT(window_info.display, glxpixmap, GLX_FRONT_EXT)
-    glXDestroyPixmap(window_info.display, glxpixmap)
+cdef void releaseTexImage(GLXPixmap glxpixmap) nogil:
+    with nogil:
+        glx.glXReleaseTexImageEXT(window_info.display, glxpixmap, GLX_FRONT_EXT)
+        glXDestroyPixmap(window_info.display, glxpixmap)
