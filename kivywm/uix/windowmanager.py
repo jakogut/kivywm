@@ -30,34 +30,27 @@ except ModuleNotFoundError:
 SUPPORTED_WINDOW_PROVIDERS = ['WindowX11', 'WindowSDL']
 
 class XWindow(Widget):
-    texture = ObjectProperty(None, allownone=True)
-    refresh = None
+    __events__ = [
+        'on_window_map',
+        'on_window_resize',
+        'on_window_unmap',
+        'on_window_destroy',
+    ]
 
     def __init__(self, manager, window, **kwargs):
         super(XWindow, self).__init__(**kwargs)
 
         self.manager = manager
 
+        self.texture = None
         self.pixmap = None
         self._window = window
+
+        self.render_loop = None
 
         with self.canvas:
             Color(1, 1, 1, 1)
             self.rect = Rectangle(size=self.size, pos=self.pos)
-
-        # HACK: invalidate the pixmap every couple of seconds to update the
-        # texture. This is simply to ease development before adding support for
-        # damage and fixes
-        self.refresh = Clock.schedule_interval(lambda dt: self.on_window_map(), 0)
-
-        self.register_event_type('on_window_map')
-        self.register_event_type('on_window_resize')
-        self.register_event_type('on_unmap_notify')
-        self.register_event_type('on_destroy_notify')
-
-    def destroy(self):
-        if self.refresh:
-            self.refresh.cancel()
 
     @property
     def name(self):
@@ -70,58 +63,82 @@ class XWindow(Widget):
             height=round(self.height),
         )
 
-    def on_window_map(self):
         self.invalidate_pixmap()
 
-    def on_unmap_notify(self):
-        if self.refresh():
-            self.refresh.cancel()
+    def on_parent(self, *args):
+        if self.parent:
+            self._window.map()
+            self.invalidate_pixmap()
+            self.start_render_loop()
+        else:
+            self.stop_render_loop()
+            self._window.unmap()
 
-    def on_destroy_notify(self):
-        if self.refresh():
-            self.refresh.cancel()
+    def on_window_map(self):
+        self.invalidate_pixmap()
 
     def on_window_resize(self):
         self.invalidate_pixmap()
 
-    def invalidate_pixmap(self):
-        self.bind_texture()
-        self.redraw()
-        self.unbind_texture()
+    def on_window_unmap(self):
+        Logger.debug(f'{self.name}: Window unmapped')
+        self.stop_render_loop()
 
-    def bind_texture(self):
-        self.pixmap = self._window.composite_name_window_pixmap()
-        self.manager.display.sync()
+    def on_window_destroy(self):
+        self.stop_render_loop()
+        self.release_texture()
+        self.release_pixmap()
 
-        # TODO: Get window geometry, and create a texture based on the actual
-        # window size. There appears to be an issue with displaying NPOT
-        # textures.
-        from kivywm.graphics.texture import Texture
+    def create_pixmap(self):
+        if not self.pixmap:
+            self.pixmap = self._window.composite_name_window_pixmap()
+            self.manager.display.sync()
 
-        geom = self._window.get_geometry()
-        self.texture = Texture.create_from_pixmap(self.pixmap.id, (geom.width, geom.height))
-
-    def unbind_texture(self):
+    def release_pixmap(self):
         if self.pixmap:
             self.pixmap.free()
+            self.pixmap = None
 
-        self.pixmap = None
+    def create_texture(self):
+        self.create_pixmap()
 
+        from kivywm.graphics.texture import Texture
+
+        if not self.texture:
+            geom = self._window.get_geometry()
+            self.texture = Texture.create_from_pixmap(self.pixmap.id, (geom.width, geom.height))
+
+    def release_texture(self):
         if self.texture:
             self.texture.release_pixmap()
+            del self.texture
+            self.texture = None
 
-        self.texture = None
+    def invalidate_pixmap(self):
+        rendering = self.render_loop is not None
+        self.stop_render_loop()
+
+        self.release_texture()
+        self.release_pixmap()
+        self.create_texture()
+
+        if rendering:
+            self.start_render_loop()
 
     def redraw(self, *args):
         self.rect.texture = self.texture
         self.rect.size = self.texture.size
         self.rect.pos = self.pos
 
-    def on_parent(self, *args):
-        if self.parent:
-            self._window.map()
-        else:
-            self._window.unmap()
+    def start_render_loop(self):
+        self.render_loop = Clock.schedule_interval(
+            lambda dt: self.redraw(), 0
+        )
+
+    def stop_render_loop(self):
+        if self.render_loop:
+            self.render_loop.cancel()
+            self.render_loop = None
 
 class BaseWindowManager(EventDispatcher):
     event_mapping = {
@@ -276,13 +293,13 @@ class CompositingWindowManager(BaseWindowManager):
             return
 
         self.root_win.composite_redirect_subwindows(RedirectAutomatic)
-        self.overlay_window = self.root_win.composite_get_overlay_window().overlay_window
+        self.overlay_win = self.root_win.composite_get_overlay_window().overlay_window
         self.display.sync()
 
         for window in self.root_win.query_tree().children:
             if self.is_kivy_win(window):
                 Logger.info('WindowMgr: Found kivy window')
-                window.reparent(self.overlay_window, x=0, y=0)
+                window.reparent(self.overlay_win, x=0, y=0)
                 window.map()
                 self.display.sync()
                 break
@@ -297,22 +314,18 @@ class KivyWindowManager(CompositingWindowManager):
         '''
         if window.id not in self.windows:
             self.windows[window.id] = XWindow(self, window)
-            print(f'Created XWindow from <{window.get_wm_name()}>')
 
         default_window_callback = self.window_callbacks.get(None)
         if default_window_callback:
             default_window_callback(self.windows[window.id])
-            print('Executed default callback')
 
         id_callback = self.window_callbacks['id'].get(window.id)
         if id_callback:
             id_callback(self.windows[window.id])
-            print('Executed id callback')
 
         name_callback = self.window_callbacks['name'].get(window.get_wm_name())
         if name_callback:
             name_callback(self.windows[window.id])
-            print('Executed named callback')
 
     def _remove_child(self, window):
         ''' Remove a child window
@@ -351,13 +364,13 @@ class KivyWindowManager(CompositingWindowManager):
         Logger.info(f'Destroyed window: {event}')
         if event.window.id in self.windows:
             window = self.windows.pop(event.window.id)
-            window.destroy()
+            window.dispatch('on_window_destroy')
         super(KivyWindowManager, self).on_destroy_notify(event)
 
     def on_unmap_notify(self, event):
         Logger.info(f'Unmap notify: {event}')
         if event.window.id in self.windows:
-            self.windows[event.window.id].dispatch('on_unmap_notify')
+            self.windows[event.window.id].dispatch('on_window_unmap')
         super(KivyWindowManager, self).on_unmap_notify(event)
 
     def on_map_notify(self, event):
