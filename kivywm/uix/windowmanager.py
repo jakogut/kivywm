@@ -142,6 +142,7 @@ class XWindow(Widget):
 
 class BaseWindowManager(EventDispatcher):
     event_mapping = {
+            'ClientMessage': 'on_client_message',
             'CreateNotify': 'on_create_notify',
             'DestroyNotify': 'on_destroy_notify',
             'UnmapNotify': 'on_unmap_notify',
@@ -250,6 +251,9 @@ class BaseWindowManager(EventDispatcher):
             # TODO: Handle BadWindow
             pass
 
+    def on_client_message(self, event):
+        pass
+
     def on_create_notify(self, event):
         pass
 
@@ -276,7 +280,6 @@ class BaseWindowManager(EventDispatcher):
 
     def on_configure_request(self, event):
         pass
-
 
 class CompositingWindowManager(BaseWindowManager):
     required_extensions = ['Composite']
@@ -353,6 +356,10 @@ class KivyWindowManager(CompositingWindowManager):
 
     def get_window_by_xid(self, xid):
         return self.windows.get(xid)
+
+    def on_client_message(self, event):
+        Logger.debug(f'WindowMgr: client message: {event}')
+        super(KivyWindowManager, self).on_client_message(event)
 
     def on_create_notify(self, event):
         # Don't create a child for the Kivy window
