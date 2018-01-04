@@ -206,10 +206,9 @@ class BaseWindowManager(EventDispatcher):
     def is_kivy_win(self, window):
         window_info = self.root_window.get_window_info()
 
-        if sys.platform == 'linux':
-            from kivy.core.window.window_info import WindowInfoX11
-            if isinstance(window_info, WindowInfoX11):
-                return window_info.window == window.id
+        from kivy.core.window.window_info import WindowInfoX11
+        if isinstance(window_info, WindowInfoX11):
+            return window_info.window == window.id
 
         return False
 
@@ -303,14 +302,21 @@ class CompositingWindowManager(BaseWindowManager):
         self.overlay_win = self.root_win.composite_get_overlay_window().overlay_window
         self.display.sync()
 
-        for window in self.root_win.query_tree().children:
-            if self.is_kivy_win(window):
-                Logger.debug('WindowMgr: Found kivy window')
-                window.reparent(self.overlay_win, x=0, y=0)
-                window.map()
-                self.display.sync()
-                break
+        self.reparent_root_window()
 
+    def reparent_root_window(self):
+        window_info = self.root_window.get_window_info()
+        from kivy.core.window.window_info import WindowInfoX11
+        if not isinstance(window_info, WindowInfoX11):
+            Logger.error(f'WindowMgr: window_info is invalid: {window_info}')
+            sys.exit(1)
+
+        kivy_win = self.display.create_resource_object('window', window_info.window)
+        Logger.debug(f'WindowMgr: kivy win id: 0x{kivy_win.id:02X}')
+        Logger.debug(f'WindowMgr: query_tree: {kivy_win.query_tree()}')
+        kivy_win.reparent(self.overlay_win, x=0, y=0)
+        Logger.debug(f'WindowMgr: query_tree: {kivy_win.query_tree()}')
+        self.display.sync()
 
 class KivyWindowManager(CompositingWindowManager):
     windows = DictProperty([])
