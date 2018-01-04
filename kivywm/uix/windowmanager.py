@@ -11,7 +11,7 @@ positioned according to kivy layouts.
 from kivy.graphics import Color, Rectangle
 from kivy.logger import Logger
 from kivy.event import EventDispatcher
-from kivy.properties import DictProperty, ObjectProperty
+from kivy.properties import DictProperty, ObjectProperty, BooleanProperty
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 
@@ -38,6 +38,8 @@ class XWindow(Widget):
         'on_window_destroy',
     ]
 
+    active = BooleanProperty(False)
+
     def __init__(self, manager, window, **kwargs):
         super(XWindow, self).__init__(**kwargs)
 
@@ -46,8 +48,6 @@ class XWindow(Widget):
         self.texture = None
         self.pixmap = None
         self._window = window
-
-        self.render_loop = None
 
         with self.canvas:
             Color(1, 1, 1, 1)
@@ -69,9 +69,9 @@ class XWindow(Widget):
         if self.parent:
             self._window.map()
             self.invalidate_pixmap()
-            self.start_render_loop()
+            self.active = True
         else:
-            self.stop_render_loop()
+            self.active = False
             self._window.unmap()
 
     def on_window_map(self):
@@ -82,10 +82,10 @@ class XWindow(Widget):
 
     def on_window_unmap(self):
         Logger.debug(f'{self.name}: Window unmapped')
-        self.stop_render_loop()
+        self.active = False
 
     def on_window_destroy(self):
-        self.stop_render_loop()
+        self.active = False
         self.release_texture()
         self.release_pixmap()
 
@@ -115,30 +115,18 @@ class XWindow(Widget):
             self.texture = None
 
     def invalidate_pixmap(self):
-        rendering = self.render_loop is not None
-        self.stop_render_loop()
+        self.active = False
 
         self.release_texture()
         self.release_pixmap()
         self.create_texture()
 
-        if rendering:
-            self.start_render_loop()
+        self.active = True
 
     def redraw(self, *args):
         self.rect.texture = self.texture
         self.rect.size = self.texture.size
         self.rect.pos = self.pos
-
-    def start_render_loop(self):
-        self.render_loop = Clock.schedule_interval(
-            lambda dt: self.redraw(), 0
-        )
-
-    def stop_render_loop(self):
-        if self.render_loop:
-            self.render_loop.cancel()
-            self.render_loop = None
 
 class BaseWindowManager(EventDispatcher):
     event_mapping = {
@@ -321,6 +309,15 @@ class CompositingWindowManager(BaseWindowManager):
 class KivyWindowManager(CompositingWindowManager):
     windows = DictProperty([])
     window_callbacks = DictProperty({'name': {}, 'id': {}})
+
+    def draw_windows(self):
+        for window in self.windows.values():
+            if window.active:
+                window.redraw()
+
+    def setup_wm(self):
+        super(KivyWindowManager, self).setup_wm()
+        self.render_loop = Clock.schedule_interval(lambda dt: self.draw_windows(), 0)
 
     def _add_child(self, window):
         ''' Creates an XWindow object that can be retrieved and used as a widget by the main app
