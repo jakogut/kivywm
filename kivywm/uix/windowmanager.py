@@ -178,6 +178,7 @@ class BaseWindowManager(EventDispatcher):
     def connect(self):
         try:
             self.display = Xlib.display.Display()
+            Logger.info(f'WindowMgr: Connected to display: {self.display.get_display_name()}')
         except Xlib.error.DisplayConnectionError:
             Logger.error('WindowMgr: Unable to connect to X server')
             raise
