@@ -368,8 +368,11 @@ class KivyWindowManager(CompositingWindowManager):
         super(KivyWindowManager, self).on_client_message(event)
 
     def on_create_notify(self, event):
-        # Don't create a child for the Kivy window
+        # Don't create a child for the Kivy window, or overlay
         if self.is_kivy_win(event.window):
+            return
+
+        if event.window == self.overlay_win:
             return
 
         self._add_child(event.window)
