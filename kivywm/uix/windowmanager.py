@@ -195,11 +195,12 @@ class BaseWindowManager(EventDispatcher):
         self.root_window = window
 
     def on_root_window(self, instance, window):
-        self.setup_wm()
         self.event_handler = Clock.schedule_interval(
             lambda dt: self.poll_events(),
             1.0 / X_EVENT_POLL_RATE
         )
+
+        self.setup_wm()
 
     def is_kivy_win(self, window):
         window_info = self.root_window.get_window_info()
