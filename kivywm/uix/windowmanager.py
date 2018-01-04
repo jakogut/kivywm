@@ -58,7 +58,6 @@ class XWindow(Widget):
         return self._window.get_wm_name()
 
     def on_size(self, *args):
-        Logger.info(f'Resized window: {self.name}, size: {self.size}')
         self._window.configure(
             width=round(self.width),
             height=round(self.height),
@@ -285,7 +284,7 @@ class CompositingWindowManager(BaseWindowManager):
     def check_extensions(self, extensions):
         for extension in extensions:
             if self.display.has_extension(extension):
-                Logger.info('WindowMgr: has extension {}'.format(extension))
+                Logger.debug('WindowMgr: has extension {}'.format(extension))
             else:
                 Logger.error('WindowMgr: no support for extension {}'.format(extension))
 
@@ -303,7 +302,7 @@ class CompositingWindowManager(BaseWindowManager):
 
         for window in self.root_win.query_tree().children:
             if self.is_kivy_win(window):
-                Logger.info('WindowMgr: Found kivy window')
+                Logger.debug('WindowMgr: Found kivy window')
                 window.reparent(self.overlay_win, x=0, y=0)
                 window.map()
                 self.display.sync()
@@ -362,18 +361,18 @@ class KivyWindowManager(CompositingWindowManager):
 
         self._add_child(event.window)
 
-        Logger.info(f'Created window: {event}, name: {event.window.get_wm_name()}')
+        Logger.debug(f'WindowMgr: window created: {event}, name: {event.window.get_wm_name()}')
         super(KivyWindowManager, self).on_create_notify(event)
 
     def on_destroy_notify(self, event):
-        Logger.info(f'Destroyed window: {event}')
+        Logger.debug(f'WindowMgr: window destroyed: {event}')
         if event.window.id in self.windows:
             window = self.windows.pop(event.window.id)
             window.dispatch('on_window_destroy')
         super(KivyWindowManager, self).on_destroy_notify(event)
 
     def on_unmap_notify(self, event):
-        Logger.info(f'Unmap notify: {event}')
+        Logger.debug(f'WindowMgr: window unmapped: {event}')
         if event.window.id in self.windows:
             self.windows[event.window.id].dispatch('on_window_unmap')
         super(KivyWindowManager, self).on_unmap_notify(event)
@@ -382,22 +381,22 @@ class KivyWindowManager(CompositingWindowManager):
         if event.window.id in self.windows:
             self.windows[event.window.id].dispatch('on_window_map')
 
-        Logger.info(f'Map notify: {event}, name: {event.window.get_wm_name()}')
+        Logger.debug(f'WindowMgr: window mapped: {event}, name: {event.window.get_wm_name()}')
         super(KivyWindowManager, self).on_map_notify(event)
 
     def on_mapping_notify(self, event):
-        Logger.info(f'Mapping notify: {event}')
+        Logger.debug(f'WindowMgr: mapping notify: {event}')
 
     def on_map_request(self, event):
-        Logger.info(f'Map request: {event}, name: {event.window.get_wm_name()}')
+        Logger.debug(f'WindowMgr: map request: {event}, name: {event.window.get_wm_name()}')
         super(KivyWindowManager, self).on_map_request(event)
 
     def on_reparent_notify(self, event):
-        Logger.info(f'Reparented window: {event}, name: {event.window.get_wm_name()}')
+        Logger.debug(f'WindowMgr: window reparented: {event}, name: {event.window.get_wm_name()}')
         super(KivyWindowManager, self).on_reparent_notify(event)
 
     def on_reparent_request(self, event):
-        Logger.info(f'Reparent request: {event}, name: {event.window.get_wm_name()}')
+        Logger.debug(f'WindowMgr: reparent request: {event}, name: {event.window.get_wm_name()}')
         super(KivyWindowManager, self).on_reparent_request(event)
 
     def on_configure_notify(self, event):
@@ -405,10 +404,10 @@ class KivyWindowManager(CompositingWindowManager):
             # TODO: Check if the window was actually resized
             self.windows[event.window.id].dispatch('on_window_resize')
 
-        Logger.info(f'Configure notify: {event}, name: {event.window.get_wm_name()}')
+        Logger.debug(f'WindowMgr: window configured: {event}, name: {event.window.get_wm_name()}')
         super(KivyWindowManager, self).on_configure_notify(event)
 
     def on_configure_request(self, event):
-        Logger.info(f'Configure request: {event}, name: {event.window.get_wm_name()}')
+        Logger.debug(f'WindowMgr: configure request: {event}, name: {event.window.get_wm_name()}')
         super(KivyWindowManager, self).on_configure_request(event)
 
