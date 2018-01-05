@@ -304,10 +304,8 @@ class CompositingWindowManager(BaseWindowManager):
             sys.exit(1)
 
         kivy_win = self.display.create_resource_object('window', window_info.window)
-        Logger.debug(f'WindowMgr: kivy win id: 0x{kivy_win.id:02X}')
-        Logger.debug(f'WindowMgr: query_tree: {kivy_win.query_tree()}')
+        Logger.debug(f'WindowMgr: app window: {kivy_win}')
         kivy_win.reparent(self.overlay_win, x=0, y=0)
-        Logger.debug(f'WindowMgr: query_tree: {kivy_win.query_tree()}')
         self.display.sync()
 
 class KivyWindowManager(CompositingWindowManager):
