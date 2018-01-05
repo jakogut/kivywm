@@ -146,7 +146,7 @@ class BaseWindowManager(EventDispatcher):
     display = None
     is_active = None
 
-    root_window = ObjectProperty(None)
+    app_window = ObjectProperty(None)
 
     def __init__(self, *args, **kwargs):
         super(BaseWindowManager, self).__init__(*args, **kwargs)
@@ -161,7 +161,7 @@ class BaseWindowManager(EventDispatcher):
             for event in self.event_mapping.values()]
 
         self.connect()
-        self._set_root_window()
+        self._set_app_window()
 
     def connect(self):
         try:
@@ -171,7 +171,7 @@ class BaseWindowManager(EventDispatcher):
             Logger.error('WindowMgr: Unable to connect to X server')
             raise
 
-    def _set_root_window(self):
+    def _set_app_window(self):
         from kivy.app import App
         app = App.get_running_app()
 
@@ -181,9 +181,9 @@ class BaseWindowManager(EventDispatcher):
             Logger.error(f'WindowMgr: Unsupported window provider: {window.__class__.__name__}')
             return
 
-        self.root_window = window
+        self.app_window = window
 
-    def on_root_window(self, instance, window):
+    def on_app_window(self, instance, window):
         self.event_handler = Clock.schedule_interval(
             lambda dt: self.poll_events(),
             1.0 / X_EVENT_POLL_RATE
@@ -192,7 +192,7 @@ class BaseWindowManager(EventDispatcher):
         self.setup_wm()
 
     def is_kivy_win(self, window):
-        window_info = self.root_window.get_window_info()
+        window_info = self.app_window.get_window_info()
 
         from kivy.core.window.window_info import WindowInfoX11
         if isinstance(window_info, WindowInfoX11):
@@ -290,10 +290,10 @@ class CompositingWindowManager(BaseWindowManager):
         self.overlay_win = self.root_win.composite_get_overlay_window().overlay_window
         self.display.sync()
 
-        self.reparent_root_window()
+        self.reparent_app_window()
 
-    def reparent_root_window(self):
-        window_info = self.root_window.get_window_info()
+    def reparent_app_window(self):
+        window_info = self.app_window.get_window_info()
         from kivy.core.window.window_info import WindowInfoX11
         if not isinstance(window_info, WindowInfoX11):
             Logger.error(f'WindowMgr: window_info is invalid: {window_info}')
