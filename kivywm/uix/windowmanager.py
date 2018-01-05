@@ -192,6 +192,13 @@ class BaseWindowManager(EventDispatcher):
 
         self.setup_wm()
 
+        xwin = self.display.create_resource_object(
+            'window', self.app_window_info().window
+        )
+
+        root_geom = self.root_win.get_geometry()
+        xwin.configure(width=root_geom.width, height=root_geom.height)
+
     def app_window_info(self):
         if not self.app_window:
             return
