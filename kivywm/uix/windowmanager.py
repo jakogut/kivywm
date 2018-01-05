@@ -192,14 +192,15 @@ class BaseWindowManager(EventDispatcher):
 
         self.setup_wm()
 
-    def is_kivy_win(self, window):
+    def app_window_info(self):
+        if not self.app_window:
+            return
+
         window_info = self.app_window.get_window_info()
 
         from kivy.core.window.window_info import WindowInfoX11
         if isinstance(window_info, WindowInfoX11):
-            return window_info.window == window.id
-
-        return False
+            return window_info
 
     def setup_wm(self, *args):
         self.root_win = self.display.screen().root
@@ -297,9 +298,8 @@ class CompositingWindowManager(BaseWindowManager):
         self.reparent_app_window()
 
     def reparent_app_window(self):
-        window_info = self.app_window.get_window_info()
-        from kivy.core.window.window_info import WindowInfoX11
-        if not isinstance(window_info, WindowInfoX11):
+        window_info = self.app_window_info()
+        if not window_info:
             Logger.error(f'WindowMgr: window_info is invalid: {window_info}')
             sys.exit(1)
 
@@ -369,7 +369,8 @@ class KivyWindowManager(CompositingWindowManager):
 
     def on_create_notify(self, event):
         # Don't create a child for the Kivy window, or overlay
-        if self.is_kivy_win(event.window):
+        window_info = self.app_window_info()
+        if window_info and window_info.window == event.window.id:
             return
 
         if event.window == self.overlay_win:
