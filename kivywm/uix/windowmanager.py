@@ -23,6 +23,7 @@ try:
     import Xlib.error
     import Xlib.protocol.event
     import Xlib.X
+    import Xlib.Xatom
     from Xlib.ext.composite import RedirectAutomatic
 except ModuleNotFoundError:
     Logger.warning('WindowMgr: Unable to import Xlib, please install it with "pip install python-xlib"')
@@ -364,7 +365,8 @@ class KivyWindowManager(CompositingWindowManager):
         return self.windows.get(xid)
 
     def on_client_message(self, event):
-        Logger.debug(f'WindowMgr: client message: {event}')
+        Logger.debug(f'WindowMgr: client message: {event}, atom: {self.display.get_atom_name(event.type)},\
+                client_type: {self.display.get_atom_name(event.client_type)}')
         super(KivyWindowManager, self).on_client_message(event)
 
     def on_create_notify(self, event):
