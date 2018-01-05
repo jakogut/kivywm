@@ -202,6 +202,7 @@ class BaseWindowManager(EventDispatcher):
 
     def setup_wm(self, *args):
         self.root_win = self.display.screen().root
+        Logger.debug(f'WindowMgr: acquired root window: {self.root_win}')
 
         event_mask = Xlib.X.SubstructureNotifyMask \
                    | Xlib.X.SubstructureRedirectMask
@@ -289,6 +290,8 @@ class CompositingWindowManager(BaseWindowManager):
         self.root_win.composite_redirect_subwindows(RedirectAutomatic)
         self.overlay_win = self.root_win.composite_get_overlay_window().overlay_window
         self.display.sync()
+
+        Logger.debug(f'WindowMgr: created composite overlay window: {self.overlay_win}')
 
         self.reparent_app_window()
 
