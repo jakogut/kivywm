@@ -14,12 +14,13 @@ class WindowManagerApp(App):
         layout.add_widget(Label(text='Kivy Window Manager'))
         return layout
 
-    def add_window(self, window):
-        self.root.add_widget(window)
+    def add_window(self, manager, window):
+        if window.name == 'glxgears':
+            self.root.add_widget(window)
 
     def on_start(self):
         self.window_manager = KivyWindowManager()
-        self.window_manager.add_window_callback(self.add_window, name='glxgears')
+        self.window_manager.bind(on_window_create=self.add_window)
 
         for i in range(23):
             p = subprocess.Popen('glxgears')

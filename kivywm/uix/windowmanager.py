@@ -15,6 +15,7 @@ from kivy.properties import DictProperty, ObjectProperty, BooleanProperty
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 
+import weakref
 import select
 import sys
 
@@ -50,9 +51,20 @@ class XWindow(Widget):
         self.pixmap = None
         self._window = window
 
+        self.draw_event = None
+
         with self.canvas:
             Color(1, 1, 1, 1)
             self.rect = Rectangle(size=self.size, pos=self.pos)
+
+    def on_active(self, *args):
+        if self.active:
+            if not self.draw_event:
+                self.draw_event = Clock.schedule_interval(self.redraw, 1 / 60)
+        else:
+            if self.draw_event:
+                self.draw_event.cancel()
+            self.draw_event = None
 
     @property
     def name(self):
@@ -316,58 +328,35 @@ class CompositingWindowManager(BaseWindowManager):
         self.display.sync()
 
 class KivyWindowManager(CompositingWindowManager):
-    windows = DictProperty([])
-    window_callbacks = DictProperty({'name': {}, 'id': {}})
+    __events__ = ('on_window_create',)
 
-    def draw_windows(self):
-        for window in self.windows.values():
-            if window.active:
-                window.redraw()
-
-    def setup_wm(self):
-        super(KivyWindowManager, self).setup_wm()
-        self.render_loop = Clock.schedule_interval(lambda dt: self.draw_windows(), 0)
+    window_refs = DictProperty({})
 
     def _add_child(self, window):
         ''' Creates an XWindow object that can be retrieved and used as a widget by the main app
         '''
-        if window.id not in self.windows:
-            self.windows[window.id] = XWindow(self, window)
+        if window.id not in self.window_refs:
+            window_widget = XWindow(self, window)
+            self.window_refs[window.id] = weakref.ref(window_widget)
+            self.dispatch('on_window_create', window_widget)
 
-        default_window_callback = self.window_callbacks.get(None)
-        if default_window_callback:
-            default_window_callback(self.windows[window.id])
+    def on_window_create(self, window):
+        pass
 
-        id_callback = self.window_callbacks['id'].get(window.id)
-        if id_callback:
-            id_callback(self.windows[window.id])
-
-        name_callback = self.window_callbacks['name'].get(window.get_wm_name())
-        if name_callback:
-            name_callback(self.windows[window.id])
-
-    def _remove_child(self, window):
-        ''' Remove a child window
-        '''
-        if window.id in self.windows:
-            del self.windows[window.id]
-
-    def add_window_callback(self, cb, name=None, id=None):
+    def get_window(self, name=None, xid=None):
         if name:
-            self.window_callbacks['name'][name] = cb
-        elif id:
-            self.window_callbacks['id'][id] = cb
-        else:
-            self.window_callbacks[None] = cb
+            for xid, ref in self.window_refs.items():
+                window = ref()
+                if not window:
+                    continue
 
-    def get_window_by_name(self, name):
-        for xid, window in self.windows.items():
-            if window.get_wm_name() == name:
-                return window
-        return None
+                if window.get_wm_name() == name:
+                    return window
 
-    def get_window_by_xid(self, xid):
-        return self.windows.get(xid)
+        if xid:
+            window = self.window_refs.get(xid)
+            if window:
+                return window()
 
     def on_client_message(self, event):
         Logger.debug(f'WindowMgr: client message: {event}, atom: {self.display.get_atom_name(event.type)},\
@@ -390,20 +379,25 @@ class KivyWindowManager(CompositingWindowManager):
 
     def on_destroy_notify(self, event):
         Logger.debug(f'WindowMgr: window destroyed: {event}')
-        if event.window.id in self.windows:
-            window = self.windows.pop(event.window.id)
+        ref = self.window_refs.pop(event.window.id, None)
+        window = ref() if ref else None
+        if window:
             window.dispatch('on_window_destroy')
         super(KivyWindowManager, self).on_destroy_notify(event)
 
     def on_unmap_notify(self, event):
         Logger.debug(f'WindowMgr: window unmapped: {event}')
-        if event.window.id in self.windows:
-            self.windows[event.window.id].dispatch('on_window_unmap')
+        ref = self.window_refs.get(event.window.id)
+        window = ref() if ref else None
+        if window:
+            window.dispatch('on_window_unmap')
         super(KivyWindowManager, self).on_unmap_notify(event)
 
     def on_map_notify(self, event):
-        if event.window.id in self.windows:
-            self.windows[event.window.id].dispatch('on_window_map')
+        ref = self.window_refs.get(event.window.id)
+        window = ref() if ref else None
+        if window:
+            window.dispatch('on_window_map')
 
         Logger.debug(f'WindowMgr: window mapped: {event}, name: {event.window.get_wm_name()}')
         super(KivyWindowManager, self).on_map_notify(event)
@@ -424,9 +418,11 @@ class KivyWindowManager(CompositingWindowManager):
         super(KivyWindowManager, self).on_reparent_request(event)
 
     def on_configure_notify(self, event):
-        if event.window.id in self.windows:
-            # TODO: Check if the window was actually resized
-            self.windows[event.window.id].dispatch('on_window_resize')
+        # TODO: Check if the window was actually resized
+        ref = self.window_refs.get(event.window.id)
+        window = ref() if ref else None
+        if window:
+            window.dispatch('on_window_resize')
 
         Logger.debug(f'WindowMgr: window configured: {event}, name: {event.window.get_wm_name()}')
         super(KivyWindowManager, self).on_configure_notify(event)
