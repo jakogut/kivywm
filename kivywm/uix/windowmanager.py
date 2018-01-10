@@ -67,6 +67,10 @@ class XWindow(Widget):
             self.draw_event = None
 
     @property
+    def xid(self):
+        return self._window.id
+
+    @property
     def name(self):
         return self._window.get_wm_name()
 
