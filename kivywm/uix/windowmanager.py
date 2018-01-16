@@ -15,6 +15,7 @@ from kivy.properties import DictProperty, ObjectProperty, BooleanProperty
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 
+import array
 import weakref
 import select
 import sys
@@ -242,6 +243,33 @@ class BaseWindowManager(EventDispatcher):
         self.is_active = not ec.get_error()
         if not self.is_active:
             Logger.warning('WindowMgr: Unable to create window manager, another one is running')
+            return
+
+        app_window_info = self.app_window_info()
+        app_window = self.display.create_resource_object('window', app_window_info.window)
+
+        net_supporting_wm_check = self.display.intern_atom('_NET_SUPPORTING_WM_CHECK')
+        self.root_win.change_property(net_supporting_wm_check, Xlib.Xatom.WINDOW, 32, array.array('I', [app_window.id]))
+        app_window.change_property(net_supporting_wm_check, Xlib.Xatom.WINDOW, 32, array.array('I', [app_window.id]))
+
+        net_supported = self.display.intern_atom('_NET_SUPPORTED')
+        supported_hints = array.array('I',
+            [self.display.intern_atom(atom) for atom in [
+                '_NET_WM_STATE',
+                '_NET_WM_STATE_FOCUSED',
+                '_NET_WM_STATE_MAXIMIZED_VERT',
+                '_NET_WM_STATE_MAXIMIZED_HORIZ',
+                '_NET_WM_STATE_FULLSCREEN',
+                '_NET_WM_STATE_ABOVE',
+                '_NET_WM_STATE_SKIP_TASKBAR',
+                '_NET_WM_STATE_SKIP_PAGER',
+                '_NET_WM_STATE_MODAL',
+                '_NET_WM_STATE_STICKY',
+                '_NET_WM_STATE_HIDDEN',
+            ]]
+        )
+
+        self.root_win.change_property(net_supported, Xlib.Xatom.ATOM, 32, supported_hints)
 
     def poll_events(self):
         if self.is_active is not None and not self.is_active:
