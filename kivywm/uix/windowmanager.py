@@ -60,7 +60,7 @@ class XWindow(Widget):
     def on_active(self, *args):
         if self.active:
             if not self.draw_event:
-                self.draw_event = Clock.schedule_interval(self.redraw, 1 / 60)
+                self.draw_event = Clock.schedule_interval(lambda dt: self.canvas.ask_update(), 1 / 60)
         else:
             if self.draw_event:
                 self.draw_event.cancel()
@@ -129,6 +129,9 @@ class XWindow(Widget):
         if not self.texture:
             geom = self._window.get_geometry()
             self.texture = Texture.create_from_pixmap(self.pixmap.id, (geom.width, geom.height))
+            self.rect.texture = self.texture
+            self.rect.size = self.texture.size
+            self.rect.pos = self.pos
 
     def release_texture(self):
         if self.texture:
@@ -144,11 +147,6 @@ class XWindow(Widget):
         self.create_texture()
 
         self.active = True
-
-    def redraw(self, *args):
-        self.rect.texture = self.texture
-        self.rect.size = self.texture.size
-        self.rect.pos = self.pos
 
 class BaseWindowManager(EventDispatcher):
     event_mapping = {
