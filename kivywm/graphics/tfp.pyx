@@ -30,7 +30,7 @@ cdef GLXFBConfig *configs
 cpdef void tfp_init():
     from kivy.core.window import Window
     global window_info
-    window_info = Window._win.get_window_info()
+    window_info = Window.get_window_info()
 
     cdef int *pixmap_config = [
         GLX_BIND_TO_TEXTURE_RGBA_EXT, True,
