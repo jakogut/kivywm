@@ -75,11 +75,17 @@ class XWindow(Widget):
 
     @property
     def xid(self):
-        return self._window.id
+        if self._window:
+            return self._window.id
+        else:
+            return None
 
     @property
     def name(self):
-        return self._window.get_wm_name()
+        if self._window:
+            return self._window.get_wm_name()
+        else:
+            return None
 
     def on_size(self, *args):
         Logger.trace(f'WindowMgr: {self}: on_size: {self.size}')
