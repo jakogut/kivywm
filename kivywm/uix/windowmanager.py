@@ -121,6 +121,7 @@ class XWindow(Widget):
         self.active = False
         self.release_texture()
         self.release_pixmap()
+        self._window = None
 
     def create_pixmap(self):
         if not self.pixmap:
