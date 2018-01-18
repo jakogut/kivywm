@@ -41,15 +41,24 @@ class XWindow(Widget):
     ]
 
     active = BooleanProperty(False)
+    _window = ObjectProperty(None)
 
-    def __init__(self, manager, window, **kwargs):
+    def __init__(self, manager, window=None, **kwargs):
         super(XWindow, self).__init__(**kwargs)
 
         self.manager = manager
 
         self.texture = None
         self.pixmap = None
-        self._window = window
+
+        if window:
+            self._window = window
+        else:
+            self._window = manager.root_win.create_window(
+                x=0, y=0,
+                width=self.width, height=self.height,
+                depth=24, border_width=0
+            )
 
         self.draw_event = None
 
@@ -411,6 +420,11 @@ class KivyWindowManager(CompositingWindowManager):
             window = self.window_refs.get(id)
             if window:
                 return window()
+
+    def create_window(self):
+        window = XWindow(self)
+        self.window_refs[window.id] = weakref.ref(window)
+        return window
 
     def on_client_message(self, event):
         Logger.debug(f'WindowMgr: client message: {event}, atom: {self.display.get_atom_name(event.type)},\
