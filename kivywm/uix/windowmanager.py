@@ -58,6 +58,12 @@ class XWindow(Widget):
             Color(1, 1, 1, 1)
             self.rect = Rectangle(size=self.size, pos=self.pos)
 
+    def __repr__(self):
+        if hasattr(self, '_window') and self._window is not None:
+            return f'<{self.__class__.__name__} id: {hex(self.xid)} name: "{self.name}">'
+        else:
+            return f'<{self.__class__.__name__} (No Window Bound)>'
+
     def on_active(self, *args):
         if self.active:
             if not self.draw_event:
