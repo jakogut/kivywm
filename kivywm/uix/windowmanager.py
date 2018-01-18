@@ -95,7 +95,6 @@ class XWindow(Widget):
             self.release_texture()
             self.canvas.clear()
             self.rect = None
-            self._window = None
 
     def on_window_map(self):
         self.invalidate_pixmap()
