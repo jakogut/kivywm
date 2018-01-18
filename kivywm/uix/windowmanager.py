@@ -31,7 +31,6 @@ except ModuleNotFoundError:
     Logger.warning('WindowMgr: Unable to import Xlib, please install it with "pip install python-xlib"')
 
 SUPPORTED_WINDOW_PROVIDERS = ['WindowX11', 'WindowSDL']
-X_EVENT_POLL_RATE = 15
 
 class XWindow(Widget):
     __events__ = [
@@ -228,9 +227,7 @@ class BaseWindowManager(EventDispatcher):
 
     def on_app_window(self, instance, window):
         self.event_handler = Clock.schedule_interval(
-            lambda dt: self.poll_events(),
-            1.0 / X_EVENT_POLL_RATE
-        )
+            lambda dt: self.poll_events(), 0)
 
         self.setup_wm()
 
