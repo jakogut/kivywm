@@ -76,6 +76,7 @@ class XWindow(Widget):
         return self._window.get_wm_name()
 
     def on_size(self, *args):
+        Logger.trace(f'WindowMgr: {self}: on_size: {self.size}')
         self._window.configure(
             width=round(self.width),
             height=round(self.height),
@@ -84,6 +85,7 @@ class XWindow(Widget):
         self.invalidate_pixmap()
 
     def on_parent(self, *args):
+        Logger.trace(f'WindowMgr: {self}: on_parent: {self.parent}')
         if self.parent:
             self._window.map()
             self.invalidate_pixmap()
@@ -97,16 +99,19 @@ class XWindow(Widget):
             self.rect = None
 
     def on_window_map(self):
+        Logger.trace(f'WindowMgr: {self}: on_window_map')
         self.invalidate_pixmap()
 
     def on_window_resize(self):
+        Logger.trace(f'WindowMgr: {self}: on_window_resize')
         self.invalidate_pixmap()
 
     def on_window_unmap(self):
-        Logger.debug(f'{self.name}: Window unmapped')
+        Logger.trace(f'WindowMgr: {self}: on_window_unmap')
         self.active = False
 
     def on_window_destroy(self):
+        Logger.trace(f'WindowMgr: {self}: on_window_destroy')
         self.active = False
         self.release_texture()
         self.release_pixmap()
@@ -115,11 +120,13 @@ class XWindow(Widget):
         if not self.pixmap:
             self.pixmap = self._window.composite_name_window_pixmap()
             self.manager.display.sync()
+            Logger.trace(f'WindowMgr: {self}: created pixmap')
 
     def release_pixmap(self):
         if self.pixmap:
             self.pixmap.free()
             self.pixmap = None
+            Logger.trace(f'WindowMgr: {self}: released pixmap')
 
     def create_texture(self):
         self.create_pixmap()
@@ -132,14 +139,17 @@ class XWindow(Widget):
             self.rect.texture = self.texture
             self.rect.size = self.texture.size
             self.rect.pos = self.pos
+            Logger.trace(f'WindowMgr: {self}: created texture')
 
     def release_texture(self):
         if self.texture:
             self.texture.release_pixmap()
             del self.texture
             self.texture = None
+            Logger.trace(f'{self}: WindowMgr: released texture')
 
     def invalidate_pixmap(self):
+        Logger.trace(f'WindowMgr: {self}: invalidate pixmap')
         self.active = False
 
         self.release_texture()
