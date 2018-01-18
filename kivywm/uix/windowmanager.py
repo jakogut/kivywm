@@ -59,7 +59,7 @@ class XWindow(Widget):
 
     def __repr__(self):
         if hasattr(self, '_window') and self._window is not None:
-            return f'<{self.__class__.__name__} id: {hex(self.xid)} name: "{self.name}">'
+            return f'<{self.__class__.__name__} id: {hex(self.id)} name: "{self.name}">'
         else:
             return f'<{self.__class__.__name__} (No Window Bound)>'
 
@@ -73,7 +73,7 @@ class XWindow(Widget):
             self.draw_event = None
 
     @property
-    def xid(self):
+    def id(self):
         if self._window:
             return self._window.id
         else:
@@ -397,9 +397,9 @@ class KivyWindowManager(CompositingWindowManager):
     def on_window_create(self, window):
         pass
 
-    def get_window(self, name=None, xid=None):
+    def get_window(self, name=None, id=None):
         if name:
-            for xid, ref in self.window_refs.items():
+            for id, ref in self.window_refs.items():
                 window = ref()
                 if not window:
                     continue
@@ -407,8 +407,8 @@ class KivyWindowManager(CompositingWindowManager):
                 if window.get_wm_name() == name:
                     return window
 
-        if xid:
-            window = self.window_refs.get(xid)
+        if id:
+            window = self.window_refs.get(id)
             if window:
                 return window()
 
