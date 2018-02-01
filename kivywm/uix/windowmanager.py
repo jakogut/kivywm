@@ -116,7 +116,6 @@ class XWindow(Widget):
             self.release_pixmap()
             self.release_texture()
             self.canvas.clear()
-            self.rect = None
 
     def on_window_map(self):
         Logger.trace(f'WindowMgr: {self}: on_window_map')
