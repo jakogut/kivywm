@@ -41,7 +41,6 @@ class XWindow(Widget):
     ]
 
     active = BooleanProperty(False)
-    _window = ObjectProperty(None)
 
     def __init__(self, manager, window=None, **kwargs):
         super(XWindow, self).__init__(**kwargs)
@@ -83,9 +82,9 @@ class XWindow(Widget):
 
     @property
     def id(self):
-        if self._window:
+        try:
             return self._window.id
-        else:
+        except AttributeError:
             return None
 
     @property
