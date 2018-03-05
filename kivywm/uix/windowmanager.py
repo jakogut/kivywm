@@ -71,6 +71,10 @@ class XWindow(Widget):
         else:
             return f'<{self.__class__.__name__} (No Window Bound)>'
 
+    def focus(self):
+        self._win.set_input_focus(
+            revert_to=Xlib.X.RevertToParent, time=Xlib.X.CurrentTime)
+
     def on_active(self, *args):
         if self.active:
             if not self.draw_event:
