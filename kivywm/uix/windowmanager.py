@@ -383,6 +383,8 @@ class CompositingWindowManager(BaseWindowManager):
         kivy_win = self.display.create_resource_object('window', window_info.window)
         Logger.debug(f'WindowMgr: app window: {kivy_win}')
         kivy_win.reparent(self.overlay_win, x=0, y=0)
+
+        kivy_win.map()
         self.display.sync()
 
 class KivyWindowManager(CompositingWindowManager):
