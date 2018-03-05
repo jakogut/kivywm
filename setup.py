@@ -48,7 +48,7 @@ extensions = [
 
 setup(
     name='KivyWM',
-    version = '0.6.7',
+    version = '0.6.9',
     description='Kivy Window Manager',
     packages=[
         'kivywm',
