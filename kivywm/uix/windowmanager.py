@@ -183,6 +183,11 @@ class XWindow(Widget):
 
 class BaseWindowManager(EventDispatcher):
     event_mapping = {
+            'KeyPress': 'on_key_press',
+            'KeyRelease': 'on_key_release',
+            'MotionNotify': 'on_motion',
+            'ButtonPress': 'on_button_press',
+            'ButtonRelease': 'on_button_release',
             'ClientMessage': 'on_client_message',
             'CreateNotify': 'on_create_notify',
             'DestroyNotify': 'on_destroy_notify',
@@ -318,6 +323,21 @@ class BaseWindowManager(EventDispatcher):
             # TODO: Handle BadWindow
             pass
 
+    def on_key_press(self, event):
+        event.window.send_event(event)
+
+    def on_key_release(self, event):
+        event.window.send_event(event)
+
+    def on_motion(self, event):
+        event.window.send_event(event)
+
+    def on_button_press(self, event):
+        event.window.send_event(event)
+
+    def on_button_release(self, event):
+        event.window.send_event(event)
+
     def on_client_message(self, event):
         pass
 
@@ -386,6 +406,27 @@ class CompositingWindowManager(BaseWindowManager):
 
         kivy_win.map()
         self.display.sync()
+
+        status = kivy_win.grab_keyboard(
+            owner_events=False,
+            pointer_mode=Xlib.X.GrabModeAsync,
+            keyboard_mode=Xlib.X.GrabModeAsync,
+            time=Xlib.X.CurrentTime
+        )
+
+        pointer_event_mask = Xlib.X.ButtonPressMask \
+            | Xlib.X.ButtonReleaseMask \
+            | Xlib.X.PointerMotionMask
+
+        status = kivy_win.grab_pointer(
+            owner_events=False,
+            event_mask=pointer_event_mask,
+            pointer_mode=Xlib.X.GrabModeAsync,
+            keyboard_mode=Xlib.X.GrabModeAsync,
+            confine_to=kivy_win,
+            cursor=Xlib.X.NONE,
+            time=Xlib.X.CurrentTime,
+        )
 
 class KivyWindowManager(CompositingWindowManager):
     __events__ = ('on_window_create',)
