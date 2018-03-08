@@ -242,9 +242,7 @@ class BaseWindowManager(EventDispatcher):
         self.app_window = window
 
     def on_app_window(self, instance, window):
-        self.event_handler = Clock.schedule_interval(
-            lambda dt: self.poll_events(), 0)
-
+        self.poll_events()
         self.setup_wm()
 
     def app_window_info(self):
@@ -299,18 +297,19 @@ class BaseWindowManager(EventDispatcher):
 
         self.root_win.change_property(net_supported, Xlib.Xatom.ATOM, 32, supported_hints)
 
-    def poll_events(self):
-        if self.is_active is not None and not self.is_active:
-            return False
 
-        readable, w, e = select.select([self.display], [], [], 0)
+    poll_before_frame = False
+    def poll_events(self, *args):
+        if self.is_active:
+            readable, w, e = select.select([self.display], [], [], 0)
 
-        if not readable:
-            return
-        elif self.display in readable:
-            num_events = self.display.pending_events()
-            for i in range(num_events):
-                self.handle_event(self.display.next_event())
+            if readable and self.display in readable:
+                num_events = self.display.pending_events()
+                for i in range(num_events):
+                    self.handle_event(self.display.next_event())
+
+        self.poll_before_frame = not self.poll_before_frame
+        Clock.schedule_once(self.poll_events, -1 if self.poll_before_frame else 0)
 
     def handle_event(self, event):
         handler = self.event_mapping.get(event.type)
