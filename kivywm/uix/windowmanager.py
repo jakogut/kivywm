@@ -41,14 +41,14 @@ class XWindow(Widget):
     ]
 
     active = BooleanProperty(False)
+    texture = ObjectProperty(None, allownone=True)
+    pixmap = ObjectProperty(None, allownone=True)
+    draw_event = ObjectProperty(None, allownone=True)
 
     def __init__(self, manager, window=None, **kwargs):
         super(XWindow, self).__init__(**kwargs)
 
         self.manager = manager
-
-        self.texture = None
-        self.pixmap = None
 
         if window:
             self._window = window
@@ -58,8 +58,6 @@ class XWindow(Widget):
                 width=self.width, height=self.height,
                 depth=24, border_width=0
             )
-
-        self.draw_event = None
 
         with self.canvas:
             Color(1, 1, 1, 1)
