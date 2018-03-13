@@ -17,11 +17,7 @@ def texture_create_from_pixmap(pixmap, size):
     texture.min_filter = 'linear'
     texture.mag_filter = 'linear'
 
-    texture.bind()
-    glxpixmap = bindTexImage(pixmap)
-    texture.flip_vertical()
-    texture._pixmap = glxpixmap
-
+    texture.bind_pixmap(pixmap)
     return texture
 
 cdef class Texture(KivyTexture):
@@ -32,6 +28,12 @@ cdef class Texture(KivyTexture):
     def __init__(self, *args, **kwargs):
         super(Texture, self).__init__(*args, **kwargs)
         self._pixmap = None
+
+    def bind_pixmap(self, pixmap):
+        self.bind()
+        glxpixmap = bindTexImage(pixmap)
+        self.flip_vertical()
+        self._pixmap = glxpixmap
 
     def release_pixmap(self):
         if self._pixmap:
