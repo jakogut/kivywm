@@ -76,7 +76,7 @@ class XWindow(Widget):
     def on_active(self, *args):
         if self.active:
             if not self.draw_event:
-                self.draw_event = Clock.schedule_interval(lambda dt: self.canvas.ask_update(), 1 / 60)
+                self.draw_event = Clock.schedule_interval(lambda dt: self.canvas.ask_update(), 1 / 30)
         else:
             if self.draw_event:
                 self.draw_event.cancel()
