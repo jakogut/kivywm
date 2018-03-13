@@ -165,7 +165,6 @@ class XWindow(Widget):
     def release_texture(self):
         if self.texture:
             self.texture.release_pixmap()
-            del self.texture
             self.texture = None
             Logger.trace(f'{self}: WindowMgr: released texture')
 
