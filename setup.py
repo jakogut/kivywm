@@ -15,11 +15,16 @@ if platform not in supported_platforms:
 
 libraries = ['GL', 'X11']
 
-import kivy
+# Allows the include dir to be overridden, i.e., by Buildroot
+kivy_include_dir = os.environ.get('KIVY_INCLUDE_DIR')
+
+if kivy_include_dir is None:
+    import kivy
+    kivy_include_dir = os.path.join(os.path.dirname(kivy.__file__), 'include')
 
 include_dirs = [
     'kivywm/include',
-    os.path.join(os.path.dirname(kivy.__file__), 'include')
+    kivy_include_dir,
 ]
 
 extensions = [
