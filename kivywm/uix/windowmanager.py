@@ -8,7 +8,8 @@ positioned according to kivy layouts.
 
 '''
 
-from kivy.graphics import Color, Rectangle
+from kivy.core.window import Window
+from kivy.graphics import Color, Rectangle, RenderContext
 from kivy.logger import Logger
 from kivy.event import EventDispatcher
 from kivy.properties import DictProperty, ObjectProperty, BooleanProperty
@@ -46,6 +47,7 @@ class XWindow(Widget):
     draw_event = ObjectProperty(None, allownone=True)
 
     def __init__(self, manager, window=None, **kwargs):
+        self.canvas = RenderContext(use_parent_projection=True)
         super(XWindow, self).__init__(**kwargs)
 
         self.manager = manager
@@ -60,7 +62,6 @@ class XWindow(Widget):
             )
 
         with self.canvas:
-            Color(1, 1, 1, 1)
             self.rect = Rectangle(size=self.size, pos=self.pos)
 
     def __repr__(self):
@@ -73,10 +74,13 @@ class XWindow(Widget):
         self._win.set_input_focus(
             revert_to=Xlib.X.RevertToParent, time=Xlib.X.CurrentTime)
 
+    def redraw(self, *args):
+        self.canvas.ask_update()
+
     def on_active(self, *args):
         if self.active:
             if not self.draw_event:
-                self.draw_event = Clock.schedule_interval(lambda dt: self.canvas.ask_update(), 1 / 30)
+                self.draw_event = Clock.schedule_interval(self.redraw, 1/30)
         else:
             if self.draw_event:
                 self.draw_event.cancel()
