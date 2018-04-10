@@ -8,8 +8,7 @@ positioned according to kivy layouts.
 
 '''
 
-from kivy.core.window import Window
-from kivy.graphics import Color, Rectangle, RenderContext
+from kivy.graphics import Color, Rectangle
 from kivy.logger import Logger
 from kivy.event import EventDispatcher
 from kivy.properties import DictProperty, ObjectProperty, BooleanProperty
@@ -47,7 +46,6 @@ class XWindow(Widget):
     draw_event = ObjectProperty(None, allownone=True)
 
     def __init__(self, manager, window=None, **kwargs):
-        self.canvas = RenderContext(use_parent_projection=True)
         super(XWindow, self).__init__(**kwargs)
 
         self.manager = manager
