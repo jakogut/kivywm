@@ -60,8 +60,6 @@ class XWindow(Widget):
             )
 
         with self.canvas:
-            # This rect simply exists to trigger canvas redraws
-            self.trigger_rect = Rectangle(size=(0, 0), pos=(0, 0))
             self.rect = Rectangle(size=self.size, pos=self.pos)
 
     def __repr__(self):
@@ -75,10 +73,8 @@ class XWindow(Widget):
             revert_to=Xlib.X.RevertToParent, time=Xlib.X.CurrentTime)
 
     def redraw(self, *args):
-        # This is a dirty hack to force the texture to be redrawn, without
-        # reuploading anything. It uses much less CPU than canvas.ask_update.
-        # There's probably (hopefully) a better way to do this.
-        self.trigger_rect.pos = (not self.trigger_rect.pos[0], 0)
+        self.manager.display.sync()
+        self.rect.flag_update()
 
     def on_active(self, *args):
         if self.active:
