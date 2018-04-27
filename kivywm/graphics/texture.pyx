@@ -37,4 +37,5 @@ cdef class Texture(KivyTexture):
 
     def release_pixmap(self):
         if self._pixmap:
+            self.bind()
             releaseTexImage(self._pixmap)
