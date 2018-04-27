@@ -74,7 +74,8 @@ class XWindow(Widget):
 
     def redraw(self, *args):
         self.manager.display.sync()
-        self.rect.flag_update()
+        self.release_texture()
+        self.create_texture()
 
     def on_active(self, *args):
         if self.active:
