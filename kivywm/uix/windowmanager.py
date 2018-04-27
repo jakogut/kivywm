@@ -156,8 +156,6 @@ class XWindow(Widget):
             Logger.trace(f'WindowMgr: {self}: released pixmap')
 
     def create_texture(self):
-        self.create_pixmap()
-
         from kivywm.graphics.texture import Texture
 
         if not self.texture:
@@ -170,7 +168,6 @@ class XWindow(Widget):
         if self.texture:
             self.texture.release_pixmap()
             self.texture = None
-            Logger.trace(f'{self}: WindowMgr: released texture')
 
     def invalidate_pixmap(self):
         Logger.trace(f'WindowMgr: {self}: invalidate pixmap')
@@ -178,6 +175,7 @@ class XWindow(Widget):
 
         self.release_texture()
         self.release_pixmap()
+        self.create_pixmap()
         self.create_texture()
 
         self.active = True
