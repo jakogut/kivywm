@@ -19,6 +19,7 @@ import array
 import weakref
 import select
 import sys
+import os
 
 try:
     import Xlib.display
@@ -80,7 +81,8 @@ class XWindow(Widget):
     def on_active(self, *args):
         if self.active:
             if not self.draw_event:
-                self.draw_event = Clock.schedule_interval(self.redraw, 1/60)
+                self.draw_event = Clock.schedule_interval(
+                    self.redraw, 1 / os.environ.get('KIVYWM_REFRESH_HZ', 30))
         else:
             if self.draw_event:
                 self.draw_event.cancel()
