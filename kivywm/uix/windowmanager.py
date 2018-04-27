@@ -85,6 +85,9 @@ class XWindow(Widget):
                 self.draw_event.cancel()
             self.draw_event = None
 
+    def on_pos(self, instance, value):
+        self.rect.pos = value
+
     @property
     def id(self):
         try:
@@ -162,8 +165,6 @@ class XWindow(Widget):
             self.texture = Texture.create_from_pixmap(self.pixmap.id, (geom.width, geom.height))
             self.rect.texture = self.texture
             self.rect.size = self.texture.size
-            self.rect.pos = self.pos
-            Logger.trace(f'WindowMgr: {self}: created texture')
 
     def release_texture(self):
         if self.texture:
