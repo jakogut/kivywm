@@ -11,7 +11,7 @@ positioned according to kivy layouts.
 from kivy.graphics import Color, Rectangle
 from kivy.logger import Logger
 from kivy.event import EventDispatcher
-from kivy.properties import DictProperty, ObjectProperty, BooleanProperty
+from kivy.properties import DictProperty, ObjectProperty, BooleanProperty, NumericProperty
 from kivy.uix.widget import Widget
 from kivy.clock import Clock
 
@@ -45,6 +45,7 @@ class XWindow(Widget):
     texture = ObjectProperty(None, allownone=True)
     pixmap = ObjectProperty(None, allownone=True)
     draw_event = ObjectProperty(None, allownone=True)
+    refresh_rate = NumericProperty()
 
     def __init__(self, manager, window=None, **kwargs):
         super(XWindow, self).__init__(**kwargs)
@@ -63,6 +64,9 @@ class XWindow(Widget):
         with self.canvas:
             self.rect = Rectangle(size=self.size, pos=self.pos)
 
+        refresh_hz = int(os.environ.get('KIVYWM_REFRESH_HZ', 60))
+        self.refresh_rate = 1 / refresh_hz if refresh_hz > 0 else 0
+
     def __repr__(self):
         if hasattr(self, '_window') and self._window is not None:
             return f'<{self.__class__.__name__} id: {hex(self.id)} name: "{self.name}">'
@@ -75,14 +79,13 @@ class XWindow(Widget):
 
     def redraw(self, *args):
         self.manager.display.sync()
-        self.release_texture()
-        self.create_texture()
+        self.rect.flag_update()
 
     def on_active(self, *args):
         if self.active:
             if not self.draw_event:
                 self.draw_event = Clock.schedule_interval(
-                    self.redraw, 1 / os.environ.get('KIVYWM_REFRESH_HZ', 30))
+                    self.redraw, self.refresh_rate)
         else:
             if self.draw_event:
                 self.draw_event.cancel()
