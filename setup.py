@@ -15,12 +15,9 @@ if platform not in supported_platforms:
 
 libraries = ['GL', 'X11']
 
-# Allows the include dir to be overridden, i.e., by Buildroot
-kivy_include_dir = os.environ.get('KIVY_INCLUDE_DIR')
-
-if kivy_include_dir is None:
-    import kivy
-    kivy_include_dir = os.path.join(os.path.dirname(kivy.__file__), 'include')
+import kivy
+kivy_dir = os.path.dirname(kivy.__file__)
+kivy_include_dir = os.path.join(kivy_dir, 'include')
 
 include_dirs = [
     'kivywm/include',
@@ -53,7 +50,7 @@ extensions = [
 
 setup(
     name='KivyWM',
-    version = '0.7.8',
+    version = '0.7.10',
     description='Kivy Window Manager',
     packages=[
         'kivywm',
@@ -62,6 +59,6 @@ setup(
     ],
     author='Joseph Kogut',
     author_email='joseph.kogut@gmail.com',
-    ext_modules=cythonize(extensions),
+    ext_modules=cythonize(extensions, include_path=kivy.get_includes()),
 )
 
