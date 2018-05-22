@@ -78,8 +78,11 @@ class XWindow(Widget):
             revert_to=Xlib.X.RevertToParent, time=Xlib.X.CurrentTime)
 
     def redraw(self, *args):
-        self.manager.display.sync()
-        self.rect.flag_update()
+        try:
+            self.manager.display.sync()
+            self.rect.flag_update()
+        except KeyboardInterrupt:
+            return
 
     def on_active(self, *args):
         if self.active:
