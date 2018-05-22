@@ -440,6 +440,12 @@ class KivyWindowManager(CompositingWindowManager):
 
     window_refs = DictProperty({})
 
+    def stop(self):
+        for id, ref in self.window_refs.items():
+            window = ref()
+            if window:
+                window.active = False
+
     def _add_child(self, window):
         ''' Creates an XWindow object that can be retrieved and used as a widget by the main app
         '''
