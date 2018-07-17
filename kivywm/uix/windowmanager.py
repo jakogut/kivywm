@@ -312,6 +312,26 @@ class BaseWindowManager(EventDispatcher):
 
         self.root_win.change_property(net_supported, Xlib.Xatom.ATOM, 32, supported_hints)
 
+    def get_screen_sizes(self):
+        return self.root_win.xrandr_get_screen_info().sizes
+
+    def set_screen_size(self, size_id, rotation=1):
+        screen_info = self.root_win.xrandr_get_screen_info()
+        res = self.root_win.xrandr_1_0set_screen_config(
+            size_id=size_id,
+            rotation=rotation,
+            config_timestamp=screen_info.config_timestamp,
+        )
+
+        app_window_info = self.app_window_info()
+        app_window = self.display.create_resource_object(
+                'window', app_window_info.window)
+
+        size = screen_info.sizes[size_id]
+
+        # update the app window size immediately
+        app_window.configure(
+            width=size['width_in_pixels'], height=size['height_in_pixels'])
 
     poll_before_frame = False
     def poll_events(self, *args):
