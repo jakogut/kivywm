@@ -216,13 +216,6 @@ class BaseWindowManager(EventDispatcher):
 
     def __init__(self, *args, **kwargs):
         super(BaseWindowManager, self).__init__(*args, **kwargs)
-
-        # Convert event strings to X protocol values
-        self.event_mapping = {
-            getattr(Xlib.X, event): handler
-            for event, handler in self.event_mapping.items()
-        }
-
         [self.register_event_type(event)
             for event in self.event_mapping.values()]
 
@@ -320,9 +313,9 @@ class BaseWindowManager(EventDispatcher):
         Clock.schedule_once(self.poll_events, -1 if self.poll_before_frame else 0)
 
     def handle_event(self, event):
-        handler = self.event_mapping.get(event.type)
+        handler = self.event_mapping.get(event.__class__.__name__)
         if not handler:
-            Logger.warning(f'WindowMgr: received event for which there is no handler ({event.type})')
+            Logger.warning(f'WindowMgr: received event for which there is no handler <{event.__class__.__name__}> ({event.type})')
             return
         try:
             self.dispatch(handler, event)
