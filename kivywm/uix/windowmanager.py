@@ -28,6 +28,7 @@ try:
     import Xlib.X
     import Xlib.Xatom
     from Xlib.ext.composite import RedirectAutomatic
+    from Xlib.ext import randr
 except ModuleNotFoundError:
     Logger.warning('WindowMgr: Unable to import Xlib, please install it with "pip install python-xlib"')
 
@@ -207,6 +208,11 @@ class BaseWindowManager(EventDispatcher):
             'ReparentNotify': 'on_reparent_notify',
             'ConfigureNotify': 'on_configure_notify',
             'ConfigureRequest': 'on_configure_request',
+            # RandR Events
+            'ScreenChangeNotify': 'on_screen_change_notify',
+            'CrtcChangeNotify': 'on_crtc_change_notify',
+            'OutputChangeNotify': 'on_output_change_notify',
+            'OutputPropertyNotify': 'on_output_property_notify',
         }
 
     display = None
@@ -265,6 +271,14 @@ class BaseWindowManager(EventDispatcher):
 
         ec = Xlib.error.CatchError(Xlib.error.BadAccess)
         self.root_win.change_attributes(event_mask=event_mask, onerror=ec)
+
+        self.root_win.xrandr_select_input(
+            randr.RRScreenChangeNotifyMask
+            | randr.RRCrtcChangeNotifyMask
+            | randr.RROutputChangeNotifyMask
+            | randr.RROutputPropertyNotifyMask
+        )
+
         self.display.sync()
 
         self.is_active = not ec.get_error()
@@ -368,6 +382,19 @@ class BaseWindowManager(EventDispatcher):
     def on_configure_request(self, event):
         pass
 
+    # RandR Events
+    def on_screen_change_notify(self, event):
+        pass
+
+    def on_crtc_change_notify(self, event):
+        pass
+
+    def on_output_change_notify(self, event):
+        pass
+
+    def on_output_property_notify(self, event):
+        pass
+
 class CompositingWindowManager(BaseWindowManager):
     required_extensions = ['Composite']
 
@@ -427,6 +454,18 @@ class CompositingWindowManager(BaseWindowManager):
             cursor=Xlib.X.NONE,
             time=Xlib.X.CurrentTime,
         )
+
+    def on_screen_change_notify(self, event):
+        super(CompositingWindowManager, self).on_screen_change_notify(event)
+        app_window_info = self.app_window_info()
+        app_window = self.display.create_resource_object(
+                'window', app_window_info.window)
+
+        screen_info = self.root_win.xrandr_get_screen_info()
+        size = screen_info.sizes[screen_info.size_id]
+
+        app_window.configure(
+            width=size['width_in_pixels'], height=size['height_in_pixels'])
 
 class KivyWindowManager(CompositingWindowManager):
     __events__ = ('on_window_create',)
@@ -542,4 +581,20 @@ class KivyWindowManager(CompositingWindowManager):
     def on_configure_request(self, event):
         Logger.trace(f'WindowMgr: configure request: {event}, name: {event.window.get_wm_name()}')
         super(KivyWindowManager, self).on_configure_request(event)
+
+    def on_screen_change_notify(self, event):
+        Logger.trace('WindowMgr: screen changed: {event}')
+        super(KivyWindowManager, self).on_screen_change_notify(event)
+
+    def on_crtc_change_notify(self, event):
+        Logger.trace('WindowMgr: CRTC changed: {event}')
+        super(KivyWindowManager, self).on_crtc_change_notify(event)
+
+    def on_output_change_notify(self, event):
+        Logger.trace('WindowMgr: output changed: {event}')
+        super(KivyWindowManager, self).on_output_change_notify(event)
+
+    def on_output_property_notify(self, event):
+        Logger.trace('WindowMgr: output property changed: {event}')
+        super(KivyWindowManager, self).on_output_property_notify(event)
 
