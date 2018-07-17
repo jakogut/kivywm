@@ -312,6 +312,17 @@ class BaseWindowManager(EventDispatcher):
 
         self.root_win.change_property(net_supported, Xlib.Xatom.ATOM, 32, supported_hints)
 
+    def get_screen_sizes(self):
+        return self.root_win.xrandr_get_screen_info().sizes
+
+    def set_screen_size(self, size_id, rotation=1):
+        Logger.info('set_screen_size')
+        screen_info = self.root_win.xrandr_get_screen_info()
+        res = self.root_win.xrandr_1_0set_screen_config(
+            size_id=size_id,
+            rotation=rotation,
+            config_timestamp=screen_info.config_timestamp,
+        )
 
     def poll_events(self, *args):
         if self.is_active:
