@@ -62,6 +62,9 @@ class XWindow(Widget):
                 depth=24, border_width=0
             )
 
+        with self.canvas.before:
+            Color(1, 1, 1, 1)
+
         with self.canvas:
             self.rect = Rectangle(size=self.size, pos=self.pos)
 
