@@ -21,22 +21,21 @@ def texture_create_from_pixmap(pixmap, size):
     return texture
 
 cdef class Texture(KivyTexture):
-    cdef object _pixmap
+    cdef void *_image
 
     create_from_pixmap = staticmethod(texture_create_from_pixmap)
 
     def __init__(self, *args, **kwargs):
         super(Texture, self).__init__(*args, **kwargs)
-        self._pixmap = None
+        self._image = NULL
 
     def bind_pixmap(self, pixmap):
         self.bind()
-        glxpixmap = bindTexImage(pixmap)
+        egl_image = bindTexImage(pixmap)
         self.flip_vertical()
-        self._pixmap = glxpixmap
+        self._image = <void *>egl_image
 
     def release_pixmap(self):
-        if self._pixmap:
+        if self._image:
             self.bind()
-            releaseTexImage(self._pixmap)
-            self._pixmap = None
+            releaseTexImage(self._image)
