@@ -8,7 +8,7 @@ positioned according to kivy layouts.
 
 '''
 
-from kivy.graphics import Color, Rectangle
+from kivy.graphics import Color, Rectangle, RenderContext
 from kivy.logger import Logger
 from kivy.event import EventDispatcher
 from kivy.properties import DictProperty, ObjectProperty, BooleanProperty, NumericProperty
@@ -39,7 +39,7 @@ except ModuleNotFoundError:
 
 SUPPORTED_WINDOW_PROVIDERS = ['WindowX11', 'WindowSDL']
 
-class XWindow(Image):
+class XWindow(Widget):
     __events__ = [
         'on_window_map',
         'on_window_resize',
@@ -51,9 +51,10 @@ class XWindow(Image):
     invalidate_pixmap = BooleanProperty(False)
     pixmap = ObjectProperty(None, allownone=True)
     refresh_rate = NumericProperty()
+    texture = ObjectProperty(None, allownone=True)
 
     def __init__(self, manager, window=None, **kwargs):
-        super(XWindow, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.manager = manager
 
@@ -68,6 +69,12 @@ class XWindow(Image):
 
         refresh_hz = int(os.environ.get('KIVYWM_REFRESH_HZ', 60))
         self.refresh_rate = 1 / refresh_hz if refresh_hz > 0 else 0
+        self.canvas = RenderContext(use_parent_projection=True,
+                                    use_parent_modelview=True,
+                                    use_parent_frag_modelview=True)
+
+        with self.canvas:
+            self.rect = Rectangle(size=self.size)
 
     def __repr__(self):
         if hasattr(self, '_window') and self._window is not None:
@@ -206,10 +213,12 @@ class XWindow(Image):
             self.texture = Texture.create_from_pixmap(self.pixmap.id, (geom.width, geom.height))
         except AttributeError:
             return
+        else:
+            self.rect.texture = self.texture
+            self.rect.size = self.texture.size
 
     def release_texture(self):
         if self.texture:
-            self.texture.release_pixmap()
             self.manager.display.sync()
             self.texture = None
 

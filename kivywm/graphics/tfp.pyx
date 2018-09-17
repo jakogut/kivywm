@@ -2,70 +2,60 @@
 texture_from_pixmap
 '''
 
-from libc.stdint cimport uintptr_t
-from libc.stdio cimport fprintf, stderr
+from libc.stdint cimport intptr_t, uintptr_t
+from libc.stdio cimport printf, fprintf, stderr
 from libc.string cimport strlen
+from libc.stdlib cimport malloc, free
 
-DEF GLX_BIND_TO_TEXTURE_RGB_EXT = 0x20D0
-DEF GLX_BIND_TO_TEXTURE_RGBA_EXT = 0x20D1
-DEF GLX_BIND_TO_TEXTURE_TARGETS_EXT = 0x20D3
-DEF GLX_DONT_CARE = 0xFFFFFFFF
-DEF GLX_DOUBLEBUFFER = 5
-DEF GLX_DRAWABLE_TYPE = 0x8010
-DEF GLX_FRONT_EXT = 0x20DE
-DEF GLX_PIXMAP_BIT = 0x00000002
-DEF GLX_TEXTURE_FORMAT_RGB_EXT = 0x20D9
-DEF GLX_TEXTURE_TARGET_EXT = 0x20D6
-DEF GLX_TEXTURE_2D_EXT = 0x20DC
-DEF GLX_TEXTURE_2D_BIT_EXT = 0x00000002
-DEF GLX_TEXTURE_FORMAT_EXT = 0x20D5
-DEF GLX_TEXTURE_FORMAT_RGBA_EXT = 0x20DA
-DEF GLX_Y_INVERTED_EXT = 0x20D4
+DEF EGL_TRUE = 1
+DEF EGL_FALSE = 0
 
-from kivy.core.window.window_info cimport WindowInfoX11
-cdef WindowInfoX11 window_info
-cdef GLXFBConfig *configs
+DEF EGL_NONE = 0x3038
+DEF EGL_NATIVE_PIXMAP_KHR = 0x30B0
+DEF EGL_NO_CONTEXT = 0
+DEF EGL_IMAGE_PRESERVED_KHR = 0x30D2
+DEF EGL_NO_IMAGE_KHR = 0x0
 
-cpdef void tfp_init():
-    from kivy.core.window import Window
-    global window_info
-    window_info = Window.get_window_info()
+cdef extern from "X11/Xlib.h":
+    ctypedef struct XErrorEvent:
+        Display *display
+        XID resourceid
+        unsigned long serial
+        unsigned char error_code
+        unsigned char request_code
+        unsigned char minor_code
 
-    cdef int *pixmap_config = [
-        GLX_BIND_TO_TEXTURE_RGBA_EXT, 1,
-        GLX_DRAWABLE_TYPE, GLX_PIXMAP_BIT,
-        GLX_BIND_TO_TEXTURE_TARGETS_EXT, GLX_TEXTURE_2D_BIT_EXT,
-        GLX_DOUBLEBUFFER, 0,
-        GLX_Y_INVERTED_EXT, GLX_DONT_CARE,
-        0,
+    cdef void XFree(void *data) nogil
+
+    ctypedef int (*XErrorHandler)(Display *d, XErrorEvent *e)
+    cdef XErrorHandler XSetErrorHandler(XErrorHandler)
+    cdef void XGetErrorText(Display *, unsigned char, char *, int)
+
+cdef extern from "EGL/egl.h":
+    ctypedef intptr_t EGLAttrib
+    EGLDisplay eglGetCurrentDisplay() nogil
+    EGLint eglGetError() nogil
+
+cdef extern from "GL/gl.h":
+    ctypedef unsigned int GLenum
+    GLenum glGetError() nogil
+
+cdef EGLImageKHR bindTexImage(Pixmap pixmap) nogil:
+    cdef EGLDisplay egl_display = eglGetCurrentDisplay()
+
+    cdef EGLint *attribs = [
+        EGL_IMAGE_PRESERVED_KHR, EGL_TRUE,
+        EGL_NONE
     ]
 
-    global configs
+    cdef EGLImageKHR image = egl.eglCreateImageKHR(
+        egl_display,
+        <EGLContext>EGL_NO_CONTEXT,
+        EGL_NATIVE_PIXMAP_KHR,
+        <EGLClientBuffer>pixmap,
+        attribs,
+    )
 
-    cdef int c = 0
-    configs = glXChooseFBConfig(window_info.display, 0, pixmap_config, &c);
-    if not configs:
-        print('No appropriate GLX FBConfig available!')
-
-cdef extern from "GL/glx.h":
-    GLXPixmap glXCreatePixmap(Display *, GLXFBConfig, Pixmap, const int *) nogil;
-    GLXFBConfig *glXChooseFBConfig(Display *, int , const int *, int *) nogil;
-    XVisualInfo *glXChooseVisual( Display *, int , int *) nogil;
-    GLXContext glXCreateContext( Display *, XVisualInfo *, GLXContext, Bool) nogil;
-
-cdef int *pixmap_attribs = [
-    GLX_TEXTURE_TARGET_EXT, GLX_TEXTURE_2D_EXT,
-    GLX_TEXTURE_FORMAT_EXT, GLX_TEXTURE_FORMAT_RGB_EXT,
-    0
-]
-
-cdef GLXPixmap bindTexImage(Pixmap pixmap) nogil:
-    cdef GLXPixmap glxpixmap
-
-    glxpixmap = glXCreatePixmap(window_info.display, configs[0], pixmap, pixmap_attribs)
-    glx.glXBindTexImageEXT(window_info.display, glxpixmap, GLX_FRONT_EXT, NULL)
-    return glxpixmap
-
-cdef void releaseTexImage(GLXPixmap glxpixmap) nogil:
-    glx.glXReleaseTexImageEXT(window_info.display, glxpixmap, GLX_FRONT_EXT)
-    glXDestroyPixmap(window_info.display, glxpixmap)
+    egl.glEGLImageTargetTexture2DOES(GL_TEXTURE_2D, <GLeglImageOES>image)
+    if image != <EGLImageKHR>EGL_NO_IMAGE_KHR:
+        egl.eglDestroyImageKHR(egl_display, image)
