@@ -48,35 +48,11 @@ cpdef void tfp_init():
     if not configs:
         print('No appropriate GLX FBConfig available!')
 
-cdef extern from "X11/Xlib.h":
-    ctypedef struct XErrorEvent:
-        Display *display
-        XID resourceid
-        unsigned long serial
-        unsigned char error_code
-        unsigned char request_code
-        unsigned char minor_code
-
-    cdef void XFree(void *data) nogil
-
-    ctypedef int (*XErrorHandler)(Display *d, XErrorEvent *e)
-    cdef XErrorHandler XSetErrorHandler(XErrorHandler)
-    cdef void XGetErrorText(Display *, unsigned char, char *, int)
-
 cdef extern from "GL/glx.h":
     GLXPixmap glXCreatePixmap(Display *, GLXFBConfig, Pixmap, const int *) nogil;
     GLXFBConfig *glXChooseFBConfig(Display *, int , const int *, int *) nogil;
     XVisualInfo *glXChooseVisual( Display *, int , int *) nogil;
     GLXContext glXCreateContext( Display *, XVisualInfo *, GLXContext, Bool) nogil;
-
-cdef int error_handler(Display *d, XErrorEvent *e):
-    print(f'ERROR: error_code: {e.error_code}, request_code: {e.request_code}, minor_code: {e.minor_code}')
-
-    cdef char buf[255]
-    XGetErrorText(d, e.error_code, buf, 255)
-    print(f'ERROR Message: {buf}')
-
-XSetErrorHandler(error_handler)
 
 cdef int *pixmap_attribs = [
     GLX_TEXTURE_TARGET_EXT, GLX_TEXTURE_2D_EXT,
