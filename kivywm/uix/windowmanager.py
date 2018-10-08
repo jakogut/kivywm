@@ -88,15 +88,20 @@ class XWindow(Widget):
         except KeyboardInterrupt:
             return
 
-    def on_active(self, *args):
-        if self.active:
-            if not self.draw_event:
-                self.draw_event = Clock.schedule_interval(
-                    self.redraw, self.refresh_rate)
-        else:
-            if self.draw_event:
-                self.draw_event.cancel()
-            self.draw_event = None
+    def start(self, *args):
+        if not self.draw_event:
+            self.draw_event = Clock.schedule_interval(
+                self.redraw, self.refresh_rate)
+        self.active = True
+
+    def stop(self, *args):
+        if self.draw_event:
+            self.draw_event.cancel()
+        self.draw_event = None
+        self.active = False
+
+    def destroy(self, *args):
+        self._window.destroy()
 
     def on_pos(self, instance, value):
         self.rect.pos = value
@@ -128,10 +133,9 @@ class XWindow(Widget):
         Logger.trace(f'WindowMgr: {self}: on_parent: {self.parent}')
         if self.parent:
             self._window.map()
-            self.invalidate_pixmap()
-            self.active = True
+            self.start()
         else:
-            self.active = False
+            self.stop()
             self._window.unmap()
             self.release_pixmap()
             self.release_texture()
@@ -147,11 +151,11 @@ class XWindow(Widget):
 
     def on_window_unmap(self):
         Logger.trace(f'WindowMgr: {self}: on_window_unmap')
-        self.active = False
+        self.stop()
 
     def on_window_destroy(self):
         Logger.trace(f'WindowMgr: {self}: on_window_destroy')
-        self.active = False
+        self.stop()
         self.release_texture()
         self.release_pixmap()
         self._window = None
@@ -184,14 +188,17 @@ class XWindow(Widget):
 
     def invalidate_pixmap(self):
         Logger.trace(f'WindowMgr: {self}: invalidate pixmap')
-        self.active = False
+        if not self._window:
+            return
+
+        self.stop()
 
         self.release_texture()
         self.release_pixmap()
         self.create_pixmap()
         self.create_texture()
 
-        self.active = True
+        self.start()
 
 class BaseWindowManager(EventDispatcher):
     event_mapping = {
