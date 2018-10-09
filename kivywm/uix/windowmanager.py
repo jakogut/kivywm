@@ -161,10 +161,15 @@ class XWindow(Widget):
         self._window = None
 
     def create_pixmap(self):
+        ec = Xlib.error.CatchError(Xlib.error.BadMatch)
+
         if not self.pixmap:
-            self.pixmap = self._window.composite_name_window_pixmap()
+            self.pixmap = self._window.composite_name_window_pixmap(onerror=ec)
             self.manager.display.sync()
             Logger.trace(f'WindowMgr: {self}: created pixmap')
+
+        if ec.get_error():
+            self.pixmap = None
 
     def release_pixmap(self):
         if self.pixmap:
@@ -175,7 +180,7 @@ class XWindow(Widget):
     def create_texture(self):
         from kivywm.graphics.texture import Texture
 
-        if not self.texture:
+        if self.pixmap and not self.texture:
             geom = self._window.get_geometry()
             self.texture = Texture.create_from_pixmap(self.pixmap.id, (geom.width, geom.height))
             self.rect.texture = self.texture
