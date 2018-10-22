@@ -330,8 +330,22 @@ class BaseWindowManager(EventDispatcher):
     def get_screen_sizes(self):
         return self.root_win.xrandr_get_screen_info().sizes
 
-    def set_screen_size(self, size_id, rotation=1):
+    def set_screen_size(self, size_id, rotation='preserve'):
+        if rotation == 'normal':
+            rotation = 1
+        elif rotation == 'right':
+            rotation = 2
+        elif rotation == 'inverted':
+            rotation = 4
+        elif rotation == 'left':
+            rotation = 8
+        else:
+            rotation = None
+
         screen_info = self.root_win.xrandr_get_screen_info()
+        if not rotation:
+            rotation = screen_info.rotation
+
         res = self.root_win.xrandr_1_0set_screen_config(
             size_id=size_id,
             rotation=rotation,
