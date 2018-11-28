@@ -21,6 +21,8 @@ import select
 import sys
 import os
 
+os.environ['SDL_VIDEO_X11_LEGACY_FULLSCREEN'] = '0'
+
 try:
     import Xlib.display
     import Xlib.error
