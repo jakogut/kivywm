@@ -492,20 +492,6 @@ class CompositingWindowManager(BaseWindowManager):
             time=Xlib.X.CurrentTime
         )
 
-        pointer_event_mask = Xlib.X.ButtonPressMask \
-            | Xlib.X.ButtonReleaseMask \
-            | Xlib.X.PointerMotionMask
-
-        status = kivy_win.grab_pointer(
-            owner_events=False,
-            event_mask=pointer_event_mask,
-            pointer_mode=Xlib.X.GrabModeAsync,
-            keyboard_mode=Xlib.X.GrabModeAsync,
-            confine_to=kivy_win,
-            cursor=Xlib.X.NONE,
-            time=Xlib.X.CurrentTime,
-        )
-
     def on_screen_change_notify(self, event):
         super(CompositingWindowManager, self).on_screen_change_notify(event)
         app_window_info = self.app_window_info()
