@@ -18,6 +18,7 @@ from kivy.clock import Clock
 import array
 import weakref
 import select
+import subprocess
 import sys
 import os
 
@@ -283,6 +284,8 @@ class BaseWindowManager(EventDispatcher):
         self.root_win = self.display.screen().root
         Logger.debug(f'WindowMgr: acquired root window: {self.root_win}')
 
+        self.set_cursor()
+
         event_mask = Xlib.X.SubstructureNotifyMask \
                    | Xlib.X.SubstructureRedirectMask
 
@@ -363,6 +366,14 @@ class BaseWindowManager(EventDispatcher):
         # update the app window size immediately
         app_window.configure(
             width=size['width_in_pixels'], height=size['height_in_pixels'])
+
+    def set_cursor(self, name='left_ptr'):
+        p = subprocess.Popen(['xsetroot', '-cursor_name', name])
+        p.communicate()
+
+    def show_cursor(self, show=True):
+        from kivy.core.window import Window
+        Window.show_cursor = show
 
     poll_before_frame = False
     def poll_events(self, *args):
