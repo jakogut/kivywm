@@ -87,7 +87,7 @@ class XWindow(Widget):
     def redraw(self, *args):
         try:
             self.manager.display.sync()
-            self.rect.flag_update()
+            self.invalidate_pixmap()
         except KeyboardInterrupt:
             return
 
