@@ -39,3 +39,4 @@ cdef class Texture(KivyTexture):
         if self._pixmap:
             self.bind()
             releaseTexImage(self._pixmap)
+            self._pixmap = None

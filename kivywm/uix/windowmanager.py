@@ -87,7 +87,12 @@ class XWindow(Widget):
     def redraw(self, *args):
         try:
             self.manager.display.sync()
-            self.rect.flag_update()
+            self.release_texture()
+            if self.invalidate_pixmap:
+                self.release_pixmap()
+                self.invalidate_pixmap = False
+            self.create_pixmap()
+            self.create_texture()
         except KeyboardInterrupt:
             return
 
@@ -130,7 +135,7 @@ class XWindow(Widget):
             height=round(self.height),
         )
 
-        self.invalidate_pixmap()
+        self.invalidate_pixmap = True
 
     def on_parent(self, *args):
         Logger.trace(f'WindowMgr: {self}: on_parent: {self.parent}')
@@ -146,11 +151,11 @@ class XWindow(Widget):
 
     def on_window_map(self):
         Logger.trace(f'WindowMgr: {self}: on_window_map')
-        self.invalidate_pixmap()
+        self.invalidate_pixmap = True
 
     def on_window_resize(self):
         Logger.trace(f'WindowMgr: {self}: on_window_resize')
-        self.invalidate_pixmap()
+        self.invalidate_pixmap = True
 
     def on_window_unmap(self):
         Logger.trace(f'WindowMgr: {self}: on_window_unmap')
@@ -193,20 +198,6 @@ class XWindow(Widget):
         if self.texture:
             self.texture.release_pixmap()
             self.texture = None
-
-    def invalidate_pixmap(self):
-        Logger.trace(f'WindowMgr: {self}: invalidate pixmap')
-        if not self._window:
-            return
-
-        self.stop()
-
-        self.release_texture()
-        self.release_pixmap()
-        self.create_pixmap()
-        self.create_texture()
-
-        self.start()
 
 class BaseWindowManager(EventDispatcher):
     event_mapping = {
