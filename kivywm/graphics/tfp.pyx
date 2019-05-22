@@ -88,9 +88,9 @@ cdef EGLImageKHR bindTexImage(Pixmap pixmap) nogil:
 
     cdef EGLImageKHR image
 
-    cdef EGLint *img_attribs = [
-        EGL_IMAGE_PRESERVED_KHR, True,
-        EGL_NONE
+    cdef EGLint *attribs = [
+        EGL_IMAGE_PRESERVED_KHR, EGL_TRUE,
+        EGL_NONE,
     ]
 
     image = egl.eglCreateImageKHR(
@@ -98,7 +98,7 @@ cdef EGLImageKHR bindTexImage(Pixmap pixmap) nogil:
         <EGLContext>EGL_NO_CONTEXT,
         EGL_NATIVE_PIXMAP_KHR,
         <EGLClientBuffer>pixmap,
-        NULL
+        attribs,
     )
 
     cdef EGLint error
