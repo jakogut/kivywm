@@ -50,9 +50,10 @@ cpdef void tfp_init():
     window_info = Window.get_window_info()
 
     global egl_display
+    cdef int major, minor, success
     egl_display = eglGetDisplay(window_info.display)
-    if not (eglInitialize(egl_display, NULL, NULL) == EGL_TRUE):
-        print('Failed to initialize EGL')
+    success = eglInitialize(egl_display, &major, &minor)
+    fprintf(stderr, 'eglDisplay: %#08x, success: %d, EGL version: %d.%d\n', egl_display, success, major, minor);
 
 cdef extern from "X11/Xlib.h":
     ctypedef struct XErrorEvent:
