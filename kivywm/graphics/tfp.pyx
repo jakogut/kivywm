@@ -84,6 +84,8 @@ cdef extern from "EGL/egl.h":
     EGLint eglGetError() nogil
 
 cdef EGLImageKHR bindTexImage(Pixmap pixmap) nogil:
+    fprintf(stderr, "bindTexImage, pixmap: %#08x\n", pixmap)
+
     cdef EGLImageKHR image
 
     cdef EGLint *img_attribs = [
