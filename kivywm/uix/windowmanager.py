@@ -32,6 +32,7 @@ try:
     import Xlib.Xatom
     from Xlib.ext.composite import RedirectAutomatic
     from Xlib.ext import randr
+    from Xlib.ext import damage
 except ModuleNotFoundError:
     Logger.warning('WindowMgr: Unable to import Xlib, please install it with "pip install python-xlib"')
 
@@ -45,11 +46,10 @@ class XWindow(Widget):
         'on_window_destroy',
     ]
 
-    active = BooleanProperty(False)
     texture = ObjectProperty(None, allownone=True)
     pixmap = ObjectProperty(None, allownone=True)
     draw_event = ObjectProperty(None, allownone=True)
-    refresh_rate = NumericProperty()
+    is_damaged = BooleanProperty(False)
 
     def __init__(self, manager, window=None, **kwargs):
         super(XWindow, self).__init__(**kwargs)
@@ -65,14 +65,12 @@ class XWindow(Widget):
                 depth=24, border_width=0
             )
 
-        with self.canvas.before:
-            Color(1, 1, 1, 1)
+        self._window.damage_create(damage.DamageReportRawRectangles)
 
         with self.canvas:
             self.rect = Rectangle(size=self.size, pos=self.pos)
 
-        refresh_hz = int(os.environ.get('KIVYWM_REFRESH_HZ', 60))
-        self.refresh_rate = 1 / refresh_hz if refresh_hz > 0 else 0
+        Clock.schedule_interval(self.render, 0)
 
     def __repr__(self):
         if hasattr(self, '_window') and self._window is not None:
@@ -83,6 +81,20 @@ class XWindow(Widget):
     def focus(self):
         self._win.set_input_focus(
             revert_to=Xlib.X.RevertToParent, time=Xlib.X.CurrentTime)
+
+    def render(self, *args):
+        if self.is_damaged:
+            self.redraw()
+            self.is_damaged = False
+
+    def start(self):
+        if not self.draw_event:
+            self.draw_event = Clock.schedule_interval(self.render, 0)
+
+    def stop(self):
+        if self.draw_event:
+            self.draw_event.cancel()
+        self.draw_event = None
 
     def redraw(self, *args):
         try:
@@ -95,18 +107,6 @@ class XWindow(Widget):
             self.create_texture()
         except KeyboardInterrupt:
             return
-
-    def start(self, *args):
-        if not self.draw_event:
-            self.draw_event = Clock.schedule_interval(
-                self.redraw, self.refresh_rate)
-        self.active = True
-
-    def stop(self, *args):
-        if self.draw_event:
-            self.draw_event.cancel()
-        self.draw_event = None
-        self.active = False
 
     def destroy(self, *args):
         self._window.destroy()
@@ -222,6 +222,8 @@ class BaseWindowManager(EventDispatcher):
             'CrtcChangeNotify': 'on_crtc_change_notify',
             'OutputChangeNotify': 'on_output_change_notify',
             'OutputPropertyNotify': 'on_output_property_notify',
+            # DAMAGE
+            'DamageNotify': 'on_damage_notify',
         }
 
     display = None
@@ -448,13 +450,19 @@ class BaseWindowManager(EventDispatcher):
     def on_output_property_notify(self, event):
         pass
 
+    def on_damage_notify(self, event):
+        pass
+
 class CompositingWindowManager(BaseWindowManager):
-    required_extensions = ['Composite']
+    required_extensions = ['Composite', 'DAMAGE']
 
     def check_extensions(self, extensions):
         for extension in extensions:
             if self.display.has_extension(extension):
-                Logger.debug('WindowMgr: has extension {}'.format(extension))
+                query_version_fname = '{}_query_version'.format(extension.lower())
+                r = getattr(self.display, query_version_fname)()
+                Logger.debug('WindowMgr: has extension {} version {}.{}'.format(
+                    extension, r.major_version, r.minor_version))
             else:
                 Logger.error('WindowMgr: no support for extension {}'.format(extension))
 
@@ -513,9 +521,7 @@ class KivyWindowManager(CompositingWindowManager):
 
     def stop(self):
         for id, ref in self.window_refs.items():
-            window = ref()
-            if window:
-                window.active = False
+            pass
 
     def _add_child(self, window):
         ''' Creates an XWindow object that can be retrieved and used as a widget by the main app
@@ -637,3 +643,11 @@ class KivyWindowManager(CompositingWindowManager):
         Logger.trace('WindowMgr: output property changed: {event}')
         super(KivyWindowManager, self).on_output_property_notify(event)
 
+    def on_damage_notify(self, event):
+        ref = self.window_refs.get(event.drawable.id)
+        window = ref() if ref else None
+        if window:
+            window.is_damaged = True
+
+        Logger.trace(f'WindowMgr: damage notify: {event}')
+        super(KivyWindowManager, self).on_damage_notify(event)
