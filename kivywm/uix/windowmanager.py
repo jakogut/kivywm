@@ -94,20 +94,20 @@ class XWindow(Widget):
                 self.invalidate_pixmap = False
             self.create_pixmap()
             self.create_texture()
-        except KeyboardInterrupt:
-            return
+        except (Xlib.error.BadDrawable, Xlib.error.BadWindow, KeyboardInterrupt):
+            return False
+
+        return self.active
 
     def start(self, *args):
+        self.active = True
         if not self.draw_event:
             self.draw_event = Clock.schedule_interval(
                 self.redraw, self.refresh_rate)
-        self.active = True
 
     def stop(self, *args):
-        if self.draw_event:
-            self.draw_event.cancel()
-        self.draw_event = None
         self.active = False
+        self.draw_event = None
 
     def destroy(self, *args):
         self._window.destroy()
