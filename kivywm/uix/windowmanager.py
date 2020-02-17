@@ -55,6 +55,7 @@ class XWindow(Widget):
         super(XWindow, self).__init__(**kwargs)
 
         self.manager = manager
+        self.invalidate_pixmap = False
 
         if window:
             self._window = window
