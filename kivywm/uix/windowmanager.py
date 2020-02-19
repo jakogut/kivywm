@@ -46,16 +46,15 @@ class XWindow(Widget):
     ]
 
     active = BooleanProperty(False)
-    texture = ObjectProperty(None, allownone=True)
+    invalidate_pixmap = BooleanProperty(False)
     pixmap = ObjectProperty(None, allownone=True)
-    draw_event = ObjectProperty(None, allownone=True)
     refresh_rate = NumericProperty()
+    texture = ObjectProperty(None, allownone=True)
 
     def __init__(self, manager, window=None, **kwargs):
         super(XWindow, self).__init__(**kwargs)
 
         self.manager = manager
-        self.invalidate_pixmap = False
 
         if window:
             self._window = window
@@ -65,9 +64,6 @@ class XWindow(Widget):
                 width=self.width, height=self.height,
                 depth=24, border_width=0
             )
-
-        with self.canvas.before:
-            Color(1, 1, 1, 1)
 
         with self.canvas:
             self.rect = Rectangle(size=self.size, pos=self.pos)
@@ -86,34 +82,41 @@ class XWindow(Widget):
             revert_to=Xlib.X.RevertToParent, time=Xlib.X.CurrentTime)
 
     def redraw(self, *args):
+        self.canvas.ask_update()
+        return self.active
+
+    def on_invalidate_pixmap(self, *args):
+        if not self.invalidate_pixmap:
+            return
+
         try:
-            self.manager.display.sync()
             self.release_texture()
-            if self.invalidate_pixmap:
-                self.release_pixmap()
-                self.invalidate_pixmap = False
+            self.release_pixmap()
             self.create_pixmap()
             self.create_texture()
         except (Xlib.error.BadDrawable, Xlib.error.BadWindow, KeyboardInterrupt):
-            return False
+            self.active = False
 
-        return self.active
+        self.invalidate_pixmap = False
 
-    def start(self, *args):
-        self.active = True
-        if not self.draw_event:
-            self.draw_event = Clock.schedule_interval(
-                self.redraw, self.refresh_rate)
-
-    def stop(self, *args):
-        self.active = False
-        self.draw_event = None
-
-    def destroy(self, *args):
-        self._window.destroy()
+    def on_active(self, *args):
+        if self.active:
+            Clock.schedule_interval(self.redraw, self.refresh_rate)
+        else:
+            self.release_texture()
+            self.release_pixmap()
 
     def on_pos(self, instance, value):
         self.rect.pos = value
+
+    def start(self, *args):
+        self.active = True
+
+    def stop(self, *args):
+        self.active = False
+
+    def destroy(self, *args):
+        self._window.destroy()
 
     @property
     def id(self):
@@ -142,13 +145,10 @@ class XWindow(Widget):
         Logger.trace(f'WindowMgr: {self}: on_parent: {self.parent}')
         if self.parent:
             self._window.map()
+            self.invalidate_pixmap = True
             self.start()
         else:
             self.stop()
-            self._window.unmap()
-            self.release_pixmap()
-            self.release_texture()
-            self.canvas.clear()
 
     def on_window_map(self):
         Logger.trace(f'WindowMgr: {self}: on_window_map')
@@ -165,8 +165,7 @@ class XWindow(Widget):
     def on_window_destroy(self):
         Logger.trace(f'WindowMgr: {self}: on_window_destroy')
         self.stop()
-        self.release_texture()
-        self.release_pixmap()
+        self.canvas.clear()
         self._window = None
 
     def create_pixmap(self):
