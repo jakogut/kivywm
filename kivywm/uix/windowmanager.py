@@ -128,9 +128,12 @@ class XWindow(Widget):
     @property
     def name(self):
         if self._window:
-            return self._window.get_wm_name()
-        else:
-            return None
+            try:
+                return self._window.get_wm_name()
+            except Xlib.error.BadWindow:
+                pass
+
+        return None
 
     def on_size(self, *args):
         Logger.trace(f'WindowMgr: {self}: on_size: {self.size}')
