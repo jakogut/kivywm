@@ -13,6 +13,7 @@ from kivy.logger import Logger
 from kivy.event import EventDispatcher
 from kivy.properties import DictProperty, ObjectProperty, BooleanProperty, NumericProperty
 from kivy.uix.widget import Widget
+from kivy.uix.image import Image
 from kivy.clock import Clock
 
 import array
@@ -37,7 +38,7 @@ except ModuleNotFoundError:
 
 SUPPORTED_WINDOW_PROVIDERS = ['WindowX11', 'WindowSDL']
 
-class XWindow(Widget):
+class XWindow(Image):
     __events__ = [
         'on_window_map',
         'on_window_resize',
@@ -49,7 +50,6 @@ class XWindow(Widget):
     invalidate_pixmap = BooleanProperty(False)
     pixmap = ObjectProperty(None, allownone=True)
     refresh_rate = NumericProperty()
-    texture = ObjectProperty(None, allownone=True)
 
     def __init__(self, manager, window=None, **kwargs):
         super(XWindow, self).__init__(**kwargs)
@@ -64,9 +64,6 @@ class XWindow(Widget):
                 width=self.width, height=self.height,
                 depth=24, border_width=0
             )
-
-        with self.canvas:
-            self.rect = Rectangle(size=self.size, pos=self.pos)
 
         refresh_hz = int(os.environ.get('KIVYWM_REFRESH_HZ', 60))
         self.refresh_rate = 1 / refresh_hz if refresh_hz > 0 else 0
@@ -105,9 +102,6 @@ class XWindow(Widget):
         else:
             self.release_texture()
             self.release_pixmap()
-
-    def on_pos(self, instance, value):
-        self.rect.pos = value
 
     def start(self, *args):
         self.active = True
@@ -194,8 +188,6 @@ class XWindow(Widget):
         if self.pixmap and not self.texture:
             geom = self._window.get_geometry()
             self.texture = Texture.create_from_pixmap(self.pixmap.id, (geom.width, geom.height))
-            self.rect.texture = self.texture
-            self.rect.size = self.texture.size
 
     def release_texture(self):
         if self.texture:
