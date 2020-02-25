@@ -83,7 +83,7 @@ class XWindow(Image):
         return self.active
 
     def on_invalidate_pixmap(self, *args):
-        if not self.invalidate_pixmap:
+        if not self.invalidate_pixmap or not self._window:
             return
 
         try:
@@ -110,7 +110,10 @@ class XWindow(Image):
         self.active = False
 
     def destroy(self, *args):
+        self.stop()
+        self.canvas.clear()
         self._window.destroy()
+        self._window = None
 
     @property
     def id(self):
@@ -161,9 +164,6 @@ class XWindow(Image):
 
     def on_window_destroy(self):
         Logger.trace(f'WindowMgr: {self}: on_window_destroy')
-        self.stop()
-        self.canvas.clear()
-        self._window = None
 
     def create_pixmap(self):
         ec = Xlib.error.CatchError(Xlib.error.BadMatch)
