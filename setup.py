@@ -52,6 +52,10 @@ setup(
     name='KivyWM',
     version = '10.0',
     description='Kivy Window Manager',
+    install_requires=[
+        'cython',
+        'python-xlib>=0.26',
+    ],
     packages=[
         'kivywm',
         'kivywm.graphics',
