@@ -114,7 +114,9 @@ class XWindow(Image):
         self.release_pixmap()
         self.release_texture()
         self.canvas.clear()
-        self._window.destroy()
+
+        if self._window:
+            self._window.destroy()
         self._window = None
 
     @property
