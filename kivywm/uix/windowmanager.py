@@ -110,7 +110,9 @@ class XWindow(Image):
         self.active = False
 
     def destroy(self, *args):
-        self.stop()
+        self.active = False
+        self.release_pixmap()
+        self.release_texture()
         self.canvas.clear()
         self._window.destroy()
         self._window = None
