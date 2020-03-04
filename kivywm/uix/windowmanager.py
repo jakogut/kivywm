@@ -109,13 +109,13 @@ class XWindow(Image):
     def stop(self, *args):
         self.active = False
 
-    def destroy(self, *args):
+    def destroy(self, *args, include_window=True):
         self.active = False
         self.release_pixmap()
         self.release_texture()
         self.canvas.clear()
 
-        if self._window:
+        if self._window and include_window:
             self._window.destroy()
         self._window = None
 
