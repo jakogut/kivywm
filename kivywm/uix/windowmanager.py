@@ -121,9 +121,10 @@ class XWindow(Image):
         self.release_texture()
         self.canvas.clear()
 
-        if self._window and include_window:
-            self._window.destroy()
+        window = self._window
         self._window = None
+        if window and include_window:
+            window.destroy()
 
     @property
     def id(self):
