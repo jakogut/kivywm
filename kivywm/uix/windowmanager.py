@@ -103,6 +103,12 @@ class XWindow(Image):
             self.release_texture()
             self.release_pixmap()
 
+    def map(self, *args):
+        self._window.map()
+
+    def unmap(self, *args):
+        self._window.unmap()
+
     def start(self, *args):
         self.active = True
 
