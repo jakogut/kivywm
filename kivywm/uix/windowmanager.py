@@ -198,9 +198,14 @@ class XWindow(Image):
     def create_texture(self):
         from kivywm.graphics.texture import Texture
 
-        if self.pixmap and not self.texture:
+        if not self._window:
+            return
+
+        try:
             geom = self._window.get_geometry()
             self.texture = Texture.create_from_pixmap(self.pixmap.id, (geom.width, geom.height))
+        except AttributeError:
+            return
 
     def release_texture(self):
         if self.texture:
