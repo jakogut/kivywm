@@ -62,12 +62,10 @@ cdef int *pixmap_attribs = [
 cdef GLXPixmap bindTexImage(Pixmap pixmap) nogil:
     cdef GLXPixmap glxpixmap
 
-    with nogil:
-        glxpixmap = glXCreatePixmap(window_info.display, configs[0], pixmap, pixmap_attribs)
-        glx.glXBindTexImageEXT(window_info.display, glxpixmap, GLX_FRONT_EXT, NULL)
-        return glxpixmap
+    glxpixmap = glXCreatePixmap(window_info.display, configs[0], pixmap, pixmap_attribs)
+    glx.glXBindTexImageEXT(window_info.display, glxpixmap, GLX_FRONT_EXT, NULL)
+    return glxpixmap
 
 cdef void releaseTexImage(GLXPixmap glxpixmap) nogil:
-    with nogil:
-        glx.glXReleaseTexImageEXT(window_info.display, glxpixmap, GLX_FRONT_EXT)
-        glXDestroyPixmap(window_info.display, glxpixmap)
+    glx.glXReleaseTexImageEXT(window_info.display, glxpixmap, GLX_FRONT_EXT)
+    glXDestroyPixmap(window_info.display, glxpixmap)
