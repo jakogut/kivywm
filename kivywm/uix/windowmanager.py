@@ -157,7 +157,7 @@ class XWindow(Image):
     def on_parent(self, *args):
         Logger.trace(f'WindowMgr: {self}: on_parent: {self.parent}')
         if self.parent:
-            self._window.map()
+            self.map()
             self.invalidate_pixmap = True
             self.start()
         else:
