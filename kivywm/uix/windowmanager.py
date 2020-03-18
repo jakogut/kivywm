@@ -126,6 +126,7 @@ class XWindow(Image):
         self.active = False
         self.release_pixmap()
         self.release_texture()
+        self.unmap()
         self.canvas.clear()
 
         window = self._window
