@@ -194,7 +194,6 @@ class XWindow(Image):
             self.pixmap.free()
             self.manager.display.sync()
             self.pixmap = None
-            Logger.trace(f'WindowMgr: {self}: released pixmap')
 
     def create_texture(self):
         from kivywm.graphics.texture import Texture
