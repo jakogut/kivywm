@@ -122,17 +122,17 @@ class XWindow(Image):
     def stop(self, *args):
         self.active = False
 
-    def destroy(self, *args, include_window=True):
-        self.active = False
-        self.release_pixmap()
-        self.release_texture()
-        self.unmap()
-        self.canvas.clear()
-
+    def destroy(self, *args, **kwargs):
         window = self._window
         self._window = None
-        if window and include_window:
-            window.destroy()
+
+        self.active = False
+        self.unmap()
+        self.release_texture()
+        self.release_pixmap()
+        self.canvas.clear()
+
+        window.destroy()
 
     @property
     def id(self):
@@ -181,10 +181,10 @@ class XWindow(Image):
     def create_pixmap(self):
         ec = Xlib.error.CatchError(Xlib.error.BadMatch)
 
-        if not self.pixmap:
+        try:
             self.pixmap = self._window.composite_name_window_pixmap(onerror=ec)
-            self.manager.display.sync()
-            Logger.trace(f'WindowMgr: {self}: created pixmap')
+        except AttributeError:
+            pass
 
         if ec.get_error():
             self.pixmap = None
@@ -192,6 +192,7 @@ class XWindow(Image):
     def release_pixmap(self):
         if self.pixmap:
             self.pixmap.free()
+            self.manager.display.sync()
             self.pixmap = None
             Logger.trace(f'WindowMgr: {self}: released pixmap')
 
@@ -205,6 +206,7 @@ class XWindow(Image):
     def release_texture(self):
         if self.texture:
             self.texture.release_pixmap()
+            self.manager.display.sync()
             self.texture = None
 
 class BaseWindowManager(EventDispatcher):
