@@ -143,10 +143,14 @@ class XWindow(Image):
 
     def on_size(self, *args):
         Logger.trace(f'WindowMgr: {self}: on_size: {self.size}')
-        self._window.configure(
-            width=round(self.width),
-            height=round(self.height),
-        )
+
+        try:
+            self._window.configure(
+                width=round(self.width),
+                height=round(self.height),
+            )
+        except AttributeError:
+            return
 
         self.invalidate_pixmap = True
 
