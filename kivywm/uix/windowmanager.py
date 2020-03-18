@@ -105,10 +105,16 @@ class XWindow(Image):
             self.release_pixmap()
 
     def map(self, *args):
-        self._window.map()
+        try:
+            self._window.map()
+        except AttributeError:
+            pass
 
     def unmap(self, *args):
-        self._window.unmap()
+        try:
+            self._window.unmap()
+        except AttributeError:
+            pass
 
     def start(self, *args):
         self.active = True
