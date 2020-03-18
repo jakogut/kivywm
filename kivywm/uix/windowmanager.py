@@ -29,6 +29,7 @@ try:
     import Xlib.display
     import Xlib.error
     import Xlib.protocol.event
+    import Xlib.threaded
     import Xlib.X
     import Xlib.Xatom
     from Xlib.ext.composite import RedirectAutomatic
