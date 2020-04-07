@@ -515,10 +515,14 @@ class CompositingWindowManager(BaseWindowManager):
                 'window', app_window_info.window)
 
         screen_info = self.root_win.xrandr_get_screen_info()
-        size = screen_info.sizes[screen_info.size_id]
 
-        app_window.configure(
-            width=size['width_in_pixels'], height=size['height_in_pixels'])
+        try:
+            size = screen_info.sizes[screen_info.size_id]
+        except IndexError:
+            Logger.exception('Desired screen size is unavailable')
+        else:
+            app_window.configure(
+                width=size['width_in_pixels'], height=size['height_in_pixels'])
 
 class KivyWindowManager(CompositingWindowManager):
     __events__ = ('on_window_create',)
