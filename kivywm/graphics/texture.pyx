@@ -1,21 +1,12 @@
 from kivy.graphics.texture cimport Texture as KivyTexture
 from kivywm.graphics.extensions cimport *
-from kivywm.graphics.tfp cimport bindTexImage, releaseTexImage
+from kivywm.graphics.tfp cimport bindTexImage
 
 def texture_create_from_pixmap(pixmap, size):
-    cdef GLuint target = GL_TEXTURE_2D
-    cdef int allocate = 0, mipmap = 0
-    callback = None
     colorfmt = 'rgba'
-    bufferfmt = 'ubyte'
-    icolorfmt = colorfmt
-
-    cdef Texture texture = Texture(size[0], size[1], target,
-          colorfmt=colorfmt, bufferfmt=bufferfmt, mipmap=mipmap,
-          callback=callback, icolorfmt=icolorfmt)
-
-    texture.min_filter = 'linear'
-    texture.mag_filter = 'linear'
+    cdef Texture texture = Texture(size[0], size[1], GL_TEXTURE_2D,
+          colorfmt=colorfmt, bufferfmt='ubyte', mipmap=0,
+          callback=None, icolorfmt=colorfmt)
 
     texture.bind_pixmap(pixmap)
     return texture
@@ -31,11 +22,5 @@ cdef class Texture(KivyTexture):
 
     def bind_pixmap(self, pixmap):
         self.bind()
-        egl_image = bindTexImage(pixmap)
+        bindTexImage(pixmap)
         self.flip_vertical()
-        self._image = <void *>egl_image
-
-    def release_pixmap(self):
-        if self._image:
-            self.bind()
-            releaseTexImage(self._image)

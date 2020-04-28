@@ -209,7 +209,6 @@ class XWindow(Image):
 
     def release_texture(self):
         if self.texture:
-            self.texture.release_pixmap()
             self.manager.display.sync()
             self.texture = None
 
