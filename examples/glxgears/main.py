@@ -16,8 +16,7 @@ class WindowManagerApp(App):
         return layout
 
     def add_window(self, manager, window):
-        if window.name == 'glxgears':
-            self.root.add_widget(window)
+        self.root.add_widget(window)
 
     def on_start(self):
         self.window_manager = KivyWindowManager()
