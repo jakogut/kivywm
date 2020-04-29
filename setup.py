@@ -13,7 +13,7 @@ if platform not in supported_platforms:
     print('Unsupported platform: {}, exiting'.format(platform))
     sys.exit()
 
-libraries = ['GL', 'X11']
+libraries = ['GL', 'X11', 'EGL']
 
 import kivy
 kivy_dir = os.path.dirname(kivy.__file__)
