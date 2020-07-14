@@ -251,6 +251,7 @@ class BaseWindowManager(EventDispatcher):
     is_active = None
 
     app_window = ObjectProperty(None)
+    xfixes_version = None
 
     def __init__(self, *args, **kwargs):
         super(BaseWindowManager, self).__init__(*args, **kwargs)
@@ -297,6 +298,14 @@ class BaseWindowManager(EventDispatcher):
     def setup_wm(self, *args):
         self.root_win = self.display.screen().root
         Logger.debug(f'WindowMgr: acquired root window: {self.root_win}')
+
+        if not self.display.has_extension('XFIXES'):
+            if self.display.query_extension('XFIXES') is None:
+                Logger.warning(f'WindowMgr: XFIXES is unsupported')
+        else:
+            self.xfixes_version = self.display.xfixes_query_version()
+            Logger.info(f'WindowMgr: Found XFIXES version '
+                        f'{self.xfixes_version.major_version}.{self.xfixes_version.minor_version}')
 
         self.set_cursor()
 
@@ -386,8 +395,15 @@ class BaseWindowManager(EventDispatcher):
         p.communicate()
 
     def show_cursor(self, show=True):
-        from kivy.core.window import Window
-        Window.show_cursor = show
+        if not self.xfixes_version:
+            return
+
+        if show:
+            self.root_win.xfixes_show_cursor()
+        else:
+            self.root_win.xfixes_hide_cursor()
+
+        self.display.sync()
 
     poll_before_frame = False
     def poll_events(self, *args):
