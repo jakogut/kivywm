@@ -218,9 +218,7 @@ class XWindow(Widget):
             self.rect.size = self.texture.size
 
     def release_texture(self):
-        if self.texture:
-            self.manager.display.sync()
-            self.texture = None
+        self.texture = None
 
 class BaseWindowManager(EventDispatcher):
     event_mapping = {
