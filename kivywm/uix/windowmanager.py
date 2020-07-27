@@ -33,7 +33,7 @@ try:
     import Xlib.X
     import Xlib.Xatom
     from Xlib.ext.composite import RedirectAutomatic
-    from Xlib.ext import randr
+    from Xlib.ext import randr, shape
 except ModuleNotFoundError:
     Logger.warning('WindowMgr: Unable to import Xlib, please install it with "pip install python-xlib"')
 
@@ -250,6 +250,7 @@ class BaseWindowManager(EventDispatcher):
 
     app_window = ObjectProperty(None)
     xfixes_version = None
+    shape_version = None
 
     def __init__(self, *args, **kwargs):
         super(BaseWindowManager, self).__init__(*args, **kwargs)
@@ -306,6 +307,13 @@ class BaseWindowManager(EventDispatcher):
                         f'{self.xfixes_version.major_version}.{self.xfixes_version.minor_version}')
 
         self.set_cursor()
+
+        if not self.display.has_extension('SHAPE'):
+            Logger.info(f'WindowMgr: server does not have SHAPE extension')
+        else:
+            self.shape_version = self.display.shape_query_version()
+            Logger.info(f'WindowMgr: Found SHAPE version '
+                        f'{self.shape_version.major_version}.{self.shape_version.minor_version}')
 
         event_mask = Xlib.X.SubstructureNotifyMask \
                    | Xlib.X.SubstructureRedirectMask
