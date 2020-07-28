@@ -517,13 +517,38 @@ class CompositingWindowManager(BaseWindowManager):
         if not self.is_active:
             return
 
-        self.root_win.composite_redirect_subwindows(RedirectAutomatic)
-        self.overlay_win = self.root_win.composite_get_overlay_window().overlay_window
+        self.screen.root.composite_redirect_subwindows(RedirectAutomatic)
+        self.overlay_win = self.screen.root.composite_get_overlay_window().overlay_window
         self.display.sync()
 
         Logger.debug(f'WindowMgr: created composite overlay window: {self.overlay_win}')
 
         self.reparent_app_window()
+
+    def set_input_mask(self, mask=None):
+        '''
+        Mask is a tuple of (x, y, width, height) or None
+
+        If mask is None, the input mask is cleared.
+        '''
+        if mask:
+            x, y, width, height = mask
+
+            input_shape = self.overlay_win.create_pixmap(width, height, 1)
+            gc = input_shape.create_gc(forground=0,
+                                       background=0)
+            gc.change(foreground=1)
+            input_shape.fill_rectangle(gc, 0, 0, width, height)
+
+            self.overlay_win.shape_mask(shape.SO.Set, shape.SK.Input,
+                                        0, 0, input_shape)
+            gc.free()
+            input_shape.free()
+        else:
+            self.overlay_win.shape_mask(shape.SO.Set, shape.SK.Input,
+                                        0, 0, Xlib.X.NONE)
+
+        self.display.sync()
 
     def reparent_app_window(self):
         window_info = self.app_window_info()
