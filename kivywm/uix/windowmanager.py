@@ -119,11 +119,16 @@ class XWindow(Widget):
         except AttributeError:
             pass
 
+        self.invalidate_pixmap = True
+        self.start()
+
     def unmap(self, *args):
         try:
             self._window.unmap()
         except AttributeError:
             pass
+
+        self.stop()
 
     def start(self, *args):
         self.active = True
@@ -163,14 +168,6 @@ class XWindow(Widget):
 
         self.invalidate_pixmap = True
 
-    def on_parent(self, *args):
-        Logger.trace(f'WindowMgr: {self}: on_parent: {self.parent}')
-        if self.parent:
-            self.map()
-            self.invalidate_pixmap = True
-            self.start()
-        else:
-            self.stop()
 
     def on_window_map(self):
         Logger.trace(f'WindowMgr: {self}: on_window_map')
