@@ -61,10 +61,12 @@ class XWindow(Widget):
         if window:
             self._window = window
         else:
-            self._window = manager.root_win.create_window(
+            self._window = manager.screen.root.create_window(
                 x=0, y=0,
                 width=self.width, height=self.height,
-                depth=24, border_width=0
+                depth=self.manager.screen.root_depth, border_width=0,
+                window_class=Xlib.X.InputOutput,
+                visual=Xlib.X.CopyFromParent,
             )
 
         refresh_hz = int(os.environ.get('KIVYWM_REFRESH_HZ', 60))
@@ -295,8 +297,7 @@ class BaseWindowManager(EventDispatcher):
             return window_info
 
     def setup_wm(self, *args):
-        self.root_win = self.display.screen().root
-        Logger.debug(f'WindowMgr: acquired root window: {self.root_win}')
+        self.screen = self.display.screen()
 
         if not self.display.has_extension('XFIXES'):
             if self.display.query_extension('XFIXES') is None:
@@ -319,9 +320,9 @@ class BaseWindowManager(EventDispatcher):
                    | Xlib.X.SubstructureRedirectMask
 
         ec = Xlib.error.CatchError(Xlib.error.BadAccess)
-        self.root_win.change_attributes(event_mask=event_mask, onerror=ec)
+        self.screen.root.change_attributes(event_mask=event_mask, onerror=ec)
 
-        self.root_win.xrandr_select_input(
+        self.screen.root.xrandr_select_input(
             randr.RRScreenChangeNotifyMask
             | randr.RRCrtcChangeNotifyMask
             | randr.RROutputChangeNotifyMask
@@ -339,7 +340,7 @@ class BaseWindowManager(EventDispatcher):
         app_window = self.display.create_resource_object('window', app_window_info.window)
 
         net_supporting_wm_check = self.display.intern_atom('_NET_SUPPORTING_WM_CHECK')
-        self.root_win.change_property(net_supporting_wm_check, Xlib.Xatom.WINDOW, 32, array.array('I', [app_window.id]))
+        self.screen.root.change_property(net_supporting_wm_check, Xlib.Xatom.WINDOW, 32, array.array('I', [app_window.id]))
         app_window.change_property(net_supporting_wm_check, Xlib.Xatom.WINDOW, 32, array.array('I', [app_window.id]))
 
         net_supported = self.display.intern_atom('_NET_SUPPORTED')
@@ -359,10 +360,10 @@ class BaseWindowManager(EventDispatcher):
             ]]
         )
 
-        self.root_win.change_property(net_supported, Xlib.Xatom.ATOM, 32, supported_hints)
+        self.screen.root.change_property(net_supported, Xlib.Xatom.ATOM, 32, supported_hints)
 
     def get_screen_sizes(self):
-        return self.root_win.xrandr_get_screen_info().sizes
+        return self.screen.root.xrandr_get_screen_info().sizes
 
     def set_screen_size(self, size_id, rotation='preserve'):
         if rotation == 'normal':
@@ -376,11 +377,11 @@ class BaseWindowManager(EventDispatcher):
         else:
             rotation = None
 
-        screen_info = self.root_win.xrandr_get_screen_info()
+        screen_info = self.screen.root.xrandr_get_screen_info()
         if not rotation:
             rotation = screen_info.rotation
 
-        res = self.root_win.xrandr_1_0set_screen_config(
+        res = self.screen.root.xrandr_1_0set_screen_config(
             size_id=size_id,
             rotation=rotation,
             config_timestamp=screen_info.config_timestamp,
@@ -405,9 +406,9 @@ class BaseWindowManager(EventDispatcher):
             return
 
         if show:
-            self.root_win.xfixes_show_cursor()
+            self.screen.root.xfixes_show_cursor()
         else:
-            self.root_win.xfixes_hide_cursor()
+            self.screen.root.xfixes_hide_cursor()
 
         self.display.sync()
 
@@ -545,7 +546,7 @@ class CompositingWindowManager(BaseWindowManager):
         app_window = self.display.create_resource_object(
                 'window', app_window_info.window)
 
-        screen_info = self.root_win.xrandr_get_screen_info()
+        screen_info = self.screen.root.xrandr_get_screen_info()
 
         try:
             size = screen_info.sizes[screen_info.size_id]
