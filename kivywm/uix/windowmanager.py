@@ -563,13 +563,6 @@ class CompositingWindowManager(BaseWindowManager):
         kivy_win.map()
         self.display.sync()
 
-        status = kivy_win.grab_keyboard(
-            owner_events=False,
-            pointer_mode=Xlib.X.GrabModeAsync,
-            keyboard_mode=Xlib.X.GrabModeAsync,
-            time=Xlib.X.CurrentTime
-        )
-
     def on_screen_change_notify(self, event):
         super(CompositingWindowManager, self).on_screen_change_notify(event)
         app_window_info = self.app_window_info()
