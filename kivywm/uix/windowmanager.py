@@ -168,6 +168,14 @@ class XWindow(Widget):
 
         self.invalidate_pixmap = True
 
+    def on_pos(self, *args):
+        try:
+            self._window.configure(
+                x=round(self.x),
+                y=round(self.y),
+            )
+        except AttributeError:
+            return
 
     def on_window_map(self):
         Logger.trace(f'WindowMgr: {self}: on_window_map')
