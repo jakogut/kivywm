@@ -50,7 +50,7 @@ extensions = [
 
 setup(
     name='KivyWM',
-    version = '12.0',
+    version = '13.0',
     description='Kivy Window Manager',
     install_requires=[
         'cython',
