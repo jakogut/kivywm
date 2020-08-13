@@ -532,7 +532,7 @@ class CompositingWindowManager(BaseWindowManager):
         If mask is None, the input mask is cleared.
         '''
         if mask:
-            x, y, width, height = mask
+            x, y, width, height = [int(_) for _ in mask]
 
             input_shape = self.overlay_win.create_pixmap(width, height, 1)
             gc = input_shape.create_gc(forground=0,
