@@ -206,7 +206,6 @@ class XWindow(Widget):
     def release_pixmap(self):
         if self.pixmap:
             self.pixmap.free()
-            self.manager.display.sync()
             self.pixmap = None
 
     def create_texture(self):
