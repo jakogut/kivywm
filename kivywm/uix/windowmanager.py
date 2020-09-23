@@ -16,6 +16,8 @@ from kivy.uix.widget import Widget
 from kivy.uix.image import Image
 from kivy.clock import Clock
 
+from kivywm.graphics.texture import Texture
+
 import array
 import weakref
 import select
@@ -209,8 +211,6 @@ class XWindow(Widget):
             self.pixmap = None
 
     def create_texture(self):
-        from kivywm.graphics.texture import Texture
-
         if not self._window:
             return
 
